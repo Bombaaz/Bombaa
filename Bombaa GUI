@@ -1,0 +1,301 @@
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "BombaaGui"
+
+--===[ GUI 1: KEY FRAME ]===--
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Position = UDim2.new(0.35, 0, 0.35, 0)
+MainFrame.Size = UDim2.new(0, 400, 0, 200)
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(255, 255, 255)
+
+local TitleLabel = Instance.new("TextLabel", MainFrame)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Position = UDim2.new(0.2, 0, 0.1, 0)
+TitleLabel.Size = UDim2.new(0, 200, 0, 30)
+TitleLabel.Font = Enum.Font.GothamSemibold
+TitleLabel.Text = "Bombaa GUI"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 24
+
+local KeyBox = Instance.new("TextBox", MainFrame)
+KeyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyBox.Position = UDim2.new(0.5, -125, 0.4, 0)
+KeyBox.Size = UDim2.new(0, 250, 0, 35)
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.PlaceholderText = "Paste KEY Here"
+KeyBox.Text = ""
+KeyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyBox.TextSize = 16
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0, 8)
+
+local CheckButton = Instance.new("TextButton", MainFrame)
+CheckButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+CheckButton.Position = UDim2.new(0.3, 0, 0.75, 0)
+CheckButton.Size = UDim2.new(0, 140, 0, 40)
+CheckButton.Font = Enum.Font.GothamBold
+CheckButton.Text = "Check Key"
+CheckButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheckButton.TextSize = 18
+Instance.new("UICorner", CheckButton).CornerRadius = UDim.new(0, 10)
+
+local Notification = Instance.new("TextLabel", ScreenGui)
+Notification.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Notification.Position = UDim2.new(1, -220, 1, -60)
+Notification.Size = UDim2.new(0, 200, 0, 40)
+Notification.Font = Enum.Font.Gotham
+Notification.Text = "✅ Made by Bombaa"
+Notification.TextColor3 = Color3.fromRGB(255, 255, 255)
+Notification.TextSize = 16
+Notification.Visible = false
+Notification.BackgroundTransparency = 0.2
+Instance.new("UICorner", Notification).CornerRadius = UDim.new(0, 12)
+
+--===[ GUI 2: HAUPT-GUI mit Tabs ]===--
+
+local MainGui = Instance.new("Frame", ScreenGui)
+MainGui.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainGui.Position = UDim2.new(0.35, 0, 0.35, 0)
+MainGui.Size = UDim2.new(0, 550, 0, 400)
+MainGui.Visible = false
+MainGui.Active = true
+MainGui.Draggable = true
+Instance.new("UICorner", MainGui).CornerRadius = UDim.new(0, 15)
+Instance.new("UIStroke", MainGui).Color = Color3.fromRGB(0, 170, 255)
+
+local tabNames = {"Main", "Visual", "Combat", "Player"}
+local tabFrames, tabButtons = {}, {}
+
+for i, tabName in ipairs(tabNames) do
+    local tabButton = Instance.new("TextButton", MainGui)
+    tabButton.Size = UDim2.new(0, 120, 0, 30)
+    tabButton.Position = UDim2.new(0, (i - 1) * 130 + 15, 0, 10)
+    tabButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    tabButton.Font = Enum.Font.GothamBold
+    tabButton.Text = tabName
+    tabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tabButton.TextSize = 14
+    Instance.new("UICorner", tabButton).CornerRadius = UDim.new(0, 8)
+
+    local tabContent = Instance.new("Frame", MainGui)
+    tabContent.Size = UDim2.new(0, 510, 0, 310)
+    tabContent.Position = UDim2.new(0, 15, 0, 50)
+    tabContent.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    tabContent.Visible = i == 1
+    Instance.new("UICorner", tabContent).CornerRadius = UDim.new(0, 10)
+
+    tabFrames[tabName], tabButtons[tabName] = tabContent, tabButton
+
+    tabButton.MouseButton1Click:Connect(function()
+        for _, frame in pairs(tabFrames) do frame.Visible = false end
+        tabContent.Visible = true
+    end)
+end
+
+--===[ MAIN TAB: FLY BUTTON ]===--
+
+local Flying = false
+local FlyButton = Instance.new("TextButton", tabFrames["Main"])
+FlyButton.Size = UDim2.new(0, 150, 0, 40)
+FlyButton.Position = UDim2.new(0, 20, 0, 30)
+FlyButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+FlyButton.Font = Enum.Font.GothamBold
+FlyButton.Text = "FLY"
+FlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+FlyButton.TextSize = 18
+Instance.new("UICorner", FlyButton).CornerRadius = UDim.new(0, 8)
+local FlyStroke = Instance.new("UIStroke", FlyButton)
+FlyStroke.Color = Color3.fromRGB(0, 0, 0)
+FlyStroke.Thickness = 1
+FlyStroke.Transparency = 0.3
+FlyStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local function toggleFly()
+    Flying = not Flying
+    local Character = game.Players.LocalPlayer.Character
+    local HRP = Character and Character:WaitForChild("HumanoidRootPart")
+    if not HRP then return end
+    FlyButton.TextColor3 = Flying and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 255, 255)
+    if Flying then
+        local BodyVelocity = Instance.new("BodyVelocity", HRP)
+        BodyVelocity.Name = "FlyVelocity"
+        BodyVelocity.MaxForce = Vector3.new(1e4, 1e4, 1e4)
+        BodyVelocity.Velocity = Vector3.zero
+        local Run = game:GetService("RunService")
+        local UserInputService = game:GetService("UserInputService")
+        local Connection
+        Connection = Run.RenderStepped:Connect(function()
+            if not Flying then Connection:Disconnect() BodyVelocity:Destroy() return end
+            local dir = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir += workspace.CurrentCamera.CFrame.LookVector * 50 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir -= workspace.CurrentCamera.CFrame.LookVector * 50 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir -= workspace.CurrentCamera.CFrame.RightVector * 50 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir += workspace.CurrentCamera.CFrame.RightVector * 50 end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0, 50, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0, 50, 0) end
+            BodyVelocity.Velocity = dir
+        end)
+    end
+end
+FlyButton.MouseButton1Click:Connect(toggleFly)
+
+--===[ VISUAL TAB ]===--
+
+local espEnabled, highlightObjects = false, {}
+
+local function toggleESP()
+    espEnabled = not espEnabled
+    for _, hl in ipairs(highlightObjects) do if hl and hl.Parent then hl:Destroy() end end
+    highlightObjects = {}
+    if espEnabled then
+        for _, player in ipairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer and player.Character then
+                local hl = Instance.new("Highlight", player.Character)
+                hl.Name = "Highlight"
+                hl.FillColor = Color3.fromRGB(0, 0, 255)
+                hl.FillTransparency = 0.5
+                hl.OutlineColor = Color3.fromRGB(0, 0, 255)
+                hl.OutlineTransparency = 0.3
+                table.insert(highlightObjects, hl)
+            end
+        end
+    end
+end
+
+local espButton = Instance.new("TextButton", tabFrames["Visual"])
+espButton.Size = UDim2.new(0, 150, 0, 40)
+espButton.Position = UDim2.new(0, 20, 0, 30)
+espButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+espButton.Font = Enum.Font.GothamBold
+espButton.Text = "ESP"
+espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+espButton.TextSize = 18
+Instance.new("UICorner", espButton).CornerRadius = UDim.new(0, 8)
+local strokeESP = Instance.new("UIStroke", espButton)
+strokeESP.Color = Color3.fromRGB(0, 0, 0)
+strokeESP.Thickness = 1
+strokeESP.Transparency = 0.3
+strokeESP.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+espButton.MouseButton1Click:Connect(function()
+    toggleESP()
+    espButton.TextColor3 = espEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 255, 255)
+end)
+
+local tracerEnabled, tracers = false, {}
+local camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+local tracerButton = Instance.new("TextButton", tabFrames["Visual"])
+tracerButton.Size = UDim2.new(0, 150, 0, 40)
+tracerButton.Position = UDim2.new(0, 20, 0, 80)
+tracerButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+tracerButton.Font = Enum.Font.GothamBold
+tracerButton.Text = "TRACER"
+tracerButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+tracerButton.TextSize = 18
+Instance.new("UICorner", tracerButton).CornerRadius = UDim.new(0, 8)
+local strokeTracer = Instance.new("UIStroke", tracerButton)
+strokeTracer.Color = Color3.fromRGB(0, 0, 0)
+strokeTracer.Thickness = 1
+strokeTracer.Transparency = 0.3
+strokeTracer.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+tracerButton.MouseButton1Click:Connect(function()
+    tracerEnabled = not tracerEnabled
+    tracerButton.TextColor3 = tracerEnabled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(255, 255, 255)
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not tracerEnabled then
+        for _, line in pairs(tracers) do if line and line.Remove then line:Remove() end end
+        tracers = {}
+        return
+    end
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local tracer = tracers[player] or Drawing.new("Line")
+            tracer.Thickness = 1.5
+            tracer.Color = Color3.fromRGB(0, 170, 255)
+            tracer.Transparency = 1
+            tracer.ZIndex = 2
+            tracers[player] = tracer
+            local hrp = player.Character.HumanoidRootPart
+            local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+            if onScreen then
+                tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                tracer.Visible = true
+            else tracer.Visible = false end
+        elseif tracers[player] then
+            tracers[player].Visible = false
+        end
+    end
+end)
+
+--===[ PLAYER TAB: VOICE CHAT BUTTON ]===--
+
+-- VOICE CHAT BUTTON
+local voiceChatEnabled = false
+local voiceChatButton = Instance.new("TextButton", tabFrames["Player"])
+voiceChatButton.Size = UDim2.new(0, 150, 0, 40)
+voiceChatButton.Position = UDim2.new(0, 20, 0, 30)
+voiceChatButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+voiceChatButton.Font = Enum.Font.GothamBold
+voiceChatButton.Text = "VOICE CHAT"
+voiceChatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+voiceChatButton.TextSize = 18
+Instance.new("UICorner", voiceChatButton).CornerRadius = UDim.new(0, 8)
+
+local stroke = Instance.new("UIStroke", voiceChatButton)
+stroke.Color = Color3.fromRGB(0, 0, 0)
+stroke.Thickness = 1
+stroke.Transparency = 0.3
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+voiceChatButton.MouseButton1Click:Connect(function()
+    local voiceChatService = game:GetService("VoiceChatService")
+    
+    if voiceChatEnabled then
+        -- Wenn Voice Chat aktiv ist, verlassen wir ihn (optional, je nach Bedarf)
+        voiceChatService:leaveVoice()
+        voiceChatButton.TextColor3 = Color3.fromRGB(255, 255, 255)  -- Text wird weiß, wenn Voice Chat verlassen wurde
+        voiceChatEnabled = false
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+            Text = "❌ Voice Chat deaktiviert.";
+            Color = Color3.fromRGB(255, 100, 100);
+        })
+    else
+        -- Tritt dem Voice Chat bei
+        voiceChatService:joinVoice()
+        voiceChatButton.TextColor3 = Color3.fromRGB(0, 170, 255)  -- Text wird blau, wenn Voice Chat aktiviert ist
+        voiceChatEnabled = true
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+            Text = "✅ Voice Chat aktiviert.";
+            Color = Color3.fromRGB(100, 255, 100);
+        })
+    end
+end)
+
+
+--===[ KEY CHECK ]===--
+
+CheckButton.MouseButton1Click:Connect(function()
+    if KeyBox.Text == "Gooey" then
+        MainFrame.Visible = false
+        MainGui.Visible = true
+        Notification.Visible = true
+        task.delay(4, function()
+            Notification.Visible = false
+        end)
+    else
+        game.StarterGui:SetCore("ChatMakeSystemMessage", {
+            Text = "❌ Falscher Key!";
+            Color = Color3.fromRGB(255, 100, 100);
+            Font = Enum.Font.GothamBold;
+            FontSize = Enum.FontSize.Size24;
+        })
+    end
+end)
