@@ -1,0 +1,202 @@
+--[[
+  ONYX AIMBOT v1.4 (FINAL)
+  Clean | Working | Custom Hotkey
+]]--
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- GUI Erstellung
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local TitleBar = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local Divider = Instance.new("Frame")
+local ToggleButton = Instance.new("TextButton")
+local StatusLabel = Instance.new("TextLabel")
+local HotkeyFrame = Instance.new("Frame")
+local HotkeyText = Instance.new("TextLabel")
+local HotkeyButton = Instance.new("TextButton")
+
+ScreenGui.Name = "OnyxAimAssist"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.8, 0, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 200, 0, 130)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+TitleBar.Name = "TitleBar"
+TitleBar.Parent = MainFrame
+TitleBar.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
+TitleBar.BorderSizePixel = 0
+TitleBar.Size = UDim2.new(1, 0, 0, 25)
+
+Title.Name = "Title"
+Title.Parent = TitleBar
+Title.BackgroundTransparency = 1
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "ONYX AIMBOT"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 12
+
+Divider.Name = "Divider"
+Divider.Parent = MainFrame
+Divider.BackgroundColor3 = Color3.fromRGB(0, 100, 100)
+Divider.BorderSizePixel = 0
+Divider.Position = UDim2.new(0, 0, 0, 25)
+Divider.Size = UDim2.new(1, 0, 0, 1)
+
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = MainFrame
+ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Position = UDim2.new(0.1, 0, 0.35, 0)
+ToggleButton.Size = UDim2.new(0.8, 0, 0, 30)
+ToggleButton.Font = Enum.Font.GothamMedium
+ToggleButton.Text = "TOGGLE AIMBOT"
+ToggleButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+ToggleButton.TextSize = 12
+
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Parent = MainFrame
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Position = UDim2.new(0.1, 0, 0.6, 0)
+StatusLabel.Size = UDim2.new(0.8, 0, 0, 15)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Text = "Status: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+StatusLabel.TextSize = 11
+
+HotkeyFrame.Name = "HotkeyFrame"
+HotkeyFrame.Parent = MainFrame
+HotkeyFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+HotkeyFrame.BorderSizePixel = 0
+HotkeyFrame.Position = UDim2.new(0.1, 0, 0.75, 0)
+HotkeyFrame.Size = UDim2.new(0.8, 0, 0, 25)
+
+HotkeyText.Name = "HotkeyText"
+HotkeyText.Parent = HotkeyFrame
+HotkeyText.BackgroundTransparency = 1
+HotkeyText.Position = UDim2.new(0, 5, 0, 0)
+HotkeyText.Size = UDim2.new(0.4, 0, 1, 0)
+HotkeyText.Font = Enum.Font.Gotham
+HotkeyText.Text = "Hotkey:"
+HotkeyText.TextColor3 = Color3.fromRGB(180, 180, 180)
+HotkeyText.TextSize = 11
+HotkeyText.TextXAlignment = Enum.TextXAlignment.Left
+
+HotkeyButton.Name = "HotkeyButton"
+HotkeyButton.Parent = HotkeyFrame
+HotkeyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+HotkeyButton.BorderSizePixel = 0
+HotkeyButton.Position = UDim2.new(0.45, 0, 0.1, 0)
+HotkeyButton.Size = UDim2.new(0.5, 0, 0.8, 0)
+HotkeyButton.Font = Enum.Font.Gotham
+HotkeyButton.Text = "F1"
+HotkeyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+HotkeyButton.TextSize = 11
+
+-- Variablen
+local aimEnabled = false
+local currentHotkey = Enum.KeyCode.F1
+local targetPart = "Head"
+local waitingForKey = false
+
+-- Funktionen
+local function updateStatus()
+    StatusLabel.Text = "Status: " .. (aimEnabled and "ON" or "OFF")
+    StatusLabel.TextColor3 = aimEnabled and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+end
+
+local function findNearestPlayer()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    local localHead = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
+    
+    if not localHead then return nil end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local character = player.Character
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local head = character:FindFirstChild(targetPart)
+            
+            if humanoid and humanoid.Health > 0 and head then
+                local distance = (head.Position - localHead.Position).Magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestPlayer = character
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+local function aimAtTarget()
+    if not aimEnabled then return end
+    
+    local target = findNearestPlayer()
+    if target then
+        local part = target:FindFirstChild(targetPart)
+        if part then
+            local targetPosition = part.Position
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPosition)
+        end
+    end
+end
+
+-- Hotkey Funktionen
+local function setHotkey(keyCode)
+    currentHotkey = keyCode
+    HotkeyButton.Text = tostring(keyCode):gsub("Enum.KeyCode.", "")
+end
+
+HotkeyButton.MouseButton1Click:Connect(function()
+    if waitingForKey then return end
+    
+    waitingForKey = true
+    HotkeyButton.Text = "Press a key..."
+    HotkeyButton.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    
+    local connection
+    connection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            setHotkey(input.KeyCode)
+            HotkeyButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+            connection:Disconnect()
+            waitingForKey = false
+        end
+    end)
+end)
+
+-- Steuerung
+ToggleButton.MouseButton1Click:Connect(function()
+    aimEnabled = not aimEnabled
+    updateStatus()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.KeyCode == currentHotkey then
+        aimEnabled = not aimEnabled
+        updateStatus()
+    end
+end)
+
+-- Hauptloop
+RunService.RenderStepped:Connect(aimAtTarget)
+
+-- Initialisierung
+setHotkey(Enum.KeyCode.F1)
+updateStatus()
