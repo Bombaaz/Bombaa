@@ -1,12 +1,13 @@
---[[ 
+--[[
   ONYX AIMBOT v5 FINAL
   Combat + Visual ESP (Highlight, Skeletons, Tracers)
   R6 Skeleton R15-style (weiche Linien)
   Classic Aimbot (Bildschirm auf Kopf, nur Spieler im FOV)
   FOV Circle türkis + Slider fix
   Skeletons türkis (R6+R15), Highlight dunkelblau, Tracers dunkelblau
-  Activate All Button + Hotkey F5
-  Rejoin Button ESP
+  TeamCheck Button + Status
+  Rejoin Button
+  Activate All ESP (F5)
 ]]--
 
 local Players = game:GetService("Players")
@@ -90,6 +91,8 @@ local AimbotEnabled = false
 local AimbotHotkey = Enum.KeyCode.F1
 local FOVEnabled = false
 local FOVSize = 150
+local TeamCheckEnabled = false
+
 local StatusLabel = Instance.new("TextLabel",CombatFrame)
 StatusLabel.Size = UDim2.new(0.8,0,0,20)
 StatusLabel.Position = UDim2.new(0.1,0,0.1,0)
@@ -98,6 +101,15 @@ StatusLabel.Text = "Aimbot: OFF"
 StatusLabel.TextColor3 = Color3.fromRGB(255,50,50)
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 12
+
+local TeamCheckStatus = Instance.new("TextLabel",CombatFrame)
+TeamCheckStatus.Size = UDim2.new(0.8,0,0,20)
+TeamCheckStatus.Position = UDim2.new(0.1,0,0.85,0)
+TeamCheckStatus.BackgroundTransparency = 1
+TeamCheckStatus.Text = "TeamCheck: OFF"
+TeamCheckStatus.TextColor3 = Color3.fromRGB(255,50,50)
+TeamCheckStatus.Font = Enum.Font.Gotham
+TeamCheckStatus.TextSize = 12
 
 local function createButton(parent,text,posY,callback)
     local btn = Instance.new("TextButton",parent)
@@ -137,9 +149,14 @@ createButton(CombatFrame,"Toggle FOV",0.45,function()
     FOVEnabled = not FOVEnabled
 end)
 
--- ====================
+-- TeamCheck Button
+createButton(CombatFrame,"Toggle TeamCheck",0.78,function()
+    TeamCheckEnabled = not TeamCheckEnabled
+    TeamCheckStatus.Text = "TeamCheck: "..(TeamCheckEnabled and "ON" or "OFF")
+    TeamCheckStatus.TextColor3 = TeamCheckEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+end)
+
 -- FOV Slider
--- ====================
 local SliderBG = Instance.new("Frame",CombatFrame)
 SliderBG.Size = UDim2.new(0.8,0,0,20)
 SliderBG.Position = UDim2.new(0.1,0,0.52,0)
@@ -193,60 +210,59 @@ local ESPEnabled = false
 local SkeletonEnabled = false
 local TracersEnabled = false
 local DrawingObjects = {}
+local ActivateAllESP = false
 
-local function updateESP()
-    for _,obj in pairs(ESPFolder:GetChildren()) do
-        if obj:IsA("Highlight") then obj:Destroy() end
-    end
-    for _,obj in pairs(DrawingObjects) do
-        if obj and obj.Type=="Line" then obj:Remove() end
-    end
-end
-
-local ESPButtons = {}
-ESPButtons["Highlight"] = createButton(VisualFrame,"ESP Highlight (F2)",0.2,function()
-    ESPEnabled = not ESPEnabled
-    if not ESPEnabled then updateESP() end
-end)
-ESPButtons["Skeletons"] = createButton(VisualFrame,"Skeletons (F3)",0.35,function()
-    SkeletonEnabled = not SkeletonEnabled
-    if not SkeletonEnabled then updateESP() end
-end)
-ESPButtons["Tracers"] = createButton(VisualFrame,"Tracers (F4)",0.5,function()
-    TracersEnabled = not TracersEnabled
-    if not TracersEnabled then updateESP() end
+createButton(VisualFrame,"ESP Highlight (F2)",0.2,function() ESPEnabled = not ESPEnabled end)
+createButton(VisualFrame,"Skeletons (F3)",0.35,function() SkeletonEnabled = not SkeletonEnabled end)
+createButton(VisualFrame,"Tracers (F4)",0.5,function() TracersEnabled = not TracersEnabled end)
+createButton(VisualFrame,"Activate All ESP (F5)",0.65,function() 
+    ActivateAllESP = not ActivateAllESP
+    ESPEnabled = ActivateAllESP
+    SkeletonEnabled = ActivateAllESP
+    TracersEnabled = ActivateAllESP
 end)
 
--- Rejoin Button
-createButton(VisualFrame,"Rejoin",0.65,function()
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
-end)
-
--- Activate All Button + Hotkey F5
-local ActivateAllEnabled = false
-local function toggleAllESP()
-    ActivateAllEnabled = not ActivateAllEnabled
-    ESPEnabled = ActivateAllEnabled
-    SkeletonEnabled = ActivateAllEnabled
-    TracersEnabled = ActivateAllEnabled
-    if not ActivateAllEnabled then updateESP() end
-end
-createButton(VisualFrame,"Activate All (F5)",0.8,toggleAllESP)
-
+-- Hotkeys
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode==Enum.KeyCode.F2 then
-        ESPButtons["Highlight"]:MouseButton1Click()
+        ESPEnabled = not ESPEnabled
+        if not ESPEnabled then
+            for _,obj in pairs(ESPFolder:GetChildren()) do
+                if obj:IsA("Highlight") then obj:Destroy() end
+            end
+        end
     elseif input.KeyCode==Enum.KeyCode.F3 then
-        ESPButtons["Skeletons"]:MouseButton1Click()
+        SkeletonEnabled = not SkeletonEnabled
+        if not SkeletonEnabled then
+            for _,obj in pairs(DrawingObjects) do
+                if obj and obj.Type=="Line" then obj:Remove() end
+            end
+        end
     elseif input.KeyCode==Enum.KeyCode.F4 then
-        ESPButtons["Tracers"]:MouseButton1Click()
+        TracersEnabled = not TracersEnabled
+        if not TracersEnabled then
+            for _,obj in pairs(DrawingObjects) do
+                if obj and obj.Type=="Line" then obj:Remove() end
+            end
+        end
     elseif input.KeyCode==Enum.KeyCode.F5 then
-        toggleAllESP()
+        ActivateAllESP = not ActivateAllESP
+        ESPEnabled = ActivateAllESP
+        SkeletonEnabled = ActivateAllESP
+        TracersEnabled = ActivateAllESP
     end
 end)
 
 -- ====================
--- Aimbot Logic
+-- REJOIN BUTTON
+-- ====================
+createButton(VisualFrame,"Rejoin Server",0.8,function()
+    local placeId = game.PlaceId
+    TeleportService:Teleport(placeId, LocalPlayer)
+end)
+
+-- ====================
+-- Aimbot Logik
 -- ====================
 local function findNearestToCenterWithFOV()
     local closestPlayer = nil
@@ -257,6 +273,7 @@ local function findNearestToCenterWithFOV()
             local head = player.Character:FindFirstChild("Head")
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             if head and humanoid and humanoid.Health>0 then
+                if TeamCheckEnabled and player.Team==LocalPlayer.Team then continue end
                 local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
                 if onScreen then
                     local distToCenter = (Vector2.new(screenPos.X,screenPos.Y)-screenCenter).Magnitude
@@ -286,9 +303,7 @@ end)
 -- ESP, Skeletons, Tracers + FOV Circle
 -- ====================
 RunService.RenderStepped:Connect(function()
-    for _,obj in pairs(DrawingObjects) do
-        if obj then obj:Remove() end
-    end
+    for _,obj in pairs(DrawingObjects) do if obj then obj:Remove() end end
     DrawingObjects = {}
 
     for _,p in pairs(Players:GetPlayers()) do
@@ -296,7 +311,6 @@ RunService.RenderStepped:Connect(function()
             local char = p.Character
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum and hum.Health>0 then
-                -- Highlight
                 if ESPEnabled then
                     if not char:FindFirstChild("ESPHighlight") then
                         local highlight = Instance.new("Highlight")
@@ -309,7 +323,6 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Skeletons
                 if SkeletonEnabled then
                     local bones = {}
                     if char:FindFirstChild("Torso") then
@@ -321,7 +334,11 @@ RunService.RenderStepped:Connect(function()
                         local rleg = char:FindFirstChild("Right Leg")
                         if head and torso and larm and rarm and lleg and rleg then
                             bones = {
-                                {head,torso},{torso,larm},{torso,rarm},{torso,lleg},{torso,rleg},
+                                {head,torso},
+                                {torso,larm},
+                                {torso,rarm},
+                                {torso,lleg},
+                                {torso,rleg},
                                 {larm,larm.Position + (torso.Position-larm.Position)*0.3},
                                 {rarm,rarm.Position + (torso.Position-rarm.Position)*0.3},
                                 {lleg,lleg.Position + (torso.Position-lleg.Position)*0.3},
@@ -367,7 +384,6 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
 
-                -- Tracers
                 if TracersEnabled then
                     local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
                     if root then
@@ -400,4 +416,4 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("ONYX v5 FINAL loaded! Hotkeys F2-F5, Rejoin Button, Activate All Button + F5, ESP Working")
+print("ONYX v5 FINAL loaded! R6 Skeleton R15-style, Tracers dunkelblau, Highlight dunkelblau, FOV Circle türkis, TeamCheck, Rejoin, Activate All ESP")
