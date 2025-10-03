@@ -1,0 +1,687 @@
+--[[ 
+  ONYX AIMBOT v5 FINAL + BOX ESP
+  Combat + Visual ESP (Highlight, Skeletons, Tracers)
+  R6 Skeleton R15-style (weiche Linien)
+  Classic Aimbot (Bildschirm auf Kopf, nur Spieler im FOV)
+  FOV Circle rot + Slider fix
+  Skeletons rot, Highlight rot, Tracers rot, Box ESP rot
+  Activate All Button + Hotkey F5
+  Rejoin Button ESP
+  FOV Target Lines (NEU) - Rote Linien zu Spielern im FOV Circle
+  TeamCheck Button (On/Off)
+  NEU: AutoAim Hold - M1 gedrückt halten aktiviert Aimbot solange gedrückt
+  NEU: Box ESP - Rote Box um Spieler
+  NEU: ESP wird sofort für alle Spieler aktiviert (auch neue/gestorbene)
+]]--
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+
+-- ====================
+-- GUI Setup
+-- ====================
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "OnyxAimAssist"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0,360,0,580)
+MainFrame.Position = UDim2.new(0.6,0,0.2,0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25,25,30)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local TitleBar = Instance.new("Frame", MainFrame)
+TitleBar.Size = UDim2.new(1,0,0,30)
+TitleBar.BackgroundColor3 = Color3.fromRGB(0,150,150)
+local Title = Instance.new("TextLabel", TitleBar)
+Title.Size = UDim2.new(1,0,1,0)
+Title.BackgroundTransparency = 1
+Title.Text = "ONYX AIMBOT v5 + BOX ESP"
+Title.Font = Enum.Font.GothamBold
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.TextSize = 14
+
+-- Tabs
+local TabFrame = Instance.new("Frame", MainFrame)
+TabFrame.Size = UDim2.new(1,0,0,30)
+TabFrame.Position = UDim2.new(0,0,0,30)
+TabFrame.BackgroundTransparency = 1
+
+local function createTabButton(name,posX)
+    local btn = Instance.new("TextButton")
+    btn.Parent = TabFrame
+    btn.Size = UDim2.new(0,180,1,0)
+    btn.Position = UDim2.new(posX,0,0,0)
+    btn.Text = name
+    btn.Font = Enum.Font.Gotham
+    btn.TextColor3 = Color3.fromRGB(200,200,200)
+    btn.TextSize = 12
+    btn.BackgroundColor3 = Color3.fromRGB(40,40,50)
+    btn.BorderSizePixel = 0
+    return btn
+end
+
+local CombatTabButton = createTabButton("Combat",0)
+local VisualTabButton = createTabButton("Visual",0.5)
+
+local CombatFrame = Instance.new("Frame", MainFrame)
+CombatFrame.Size = UDim2.new(1,0,1,-60)
+CombatFrame.Position = UDim2.new(0,0,0,60)
+CombatFrame.BackgroundTransparency = 1
+
+local VisualFrame = Instance.new("Frame", MainFrame)
+VisualFrame.Size = UDim2.new(1,0,1,-60)
+VisualFrame.Position = UDim2.new(0,0,0,60)
+VisualFrame.BackgroundTransparency = 1
+VisualFrame.Visible = false
+
+CombatTabButton.MouseButton1Click:Connect(function()
+    CombatFrame.Visible = true
+    VisualFrame.Visible = false
+end)
+VisualTabButton.MouseButton1Click:Connect(function()
+    CombatFrame.Visible = false
+    VisualFrame.Visible = true
+end)
+
+-- ====================
+-- COMBAT
+-- ====================
+local AimbotEnabled = false
+local AimbotHotkey = Enum.KeyCode.F1
+local AimbotMouseHotkey = nil
+local FOVEnabled = false
+local TeamCheckEnabled = false
+local AutoAimEnabled = false
+local FOVSize = 150
+local StatusLabel = Instance.new("TextLabel",CombatFrame)
+StatusLabel.Size = UDim2.new(0.8,0,0,20)
+StatusLabel.Position = UDim2.new(0.1,0,0.05,0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Aimbot: OFF | AutoAim: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255,50,50)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 12
+
+local function createButton(parent,text,posY,callback)
+    local btn = Instance.new("TextButton",parent)
+    btn.Size = UDim2.new(0.8,0,0,30)
+    btn.Position = UDim2.new(0.1,0,posY,0)
+    btn.Text = text
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 12
+    btn.TextColor3 = Color3.fromRGB(200,200,200)
+    btn.BackgroundColor3 = Color3.fromRGB(40,40,50)
+    btn.BorderSizePixel = 0
+    btn.MouseButton1Click:Connect(callback)
+    return btn
+end
+
+-- Buttons Combat Tab
+createButton(CombatFrame,"Toggle Aimbot",0.1,function()
+    AimbotEnabled = not AimbotEnabled
+    StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+    StatusLabel.TextColor3 = AimbotEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+end)
+
+-- Hotkey Set Button
+createButton(CombatFrame,"Set Hotkey (Key/Mouse)",0.18,function()
+    StatusLabel.Text = "Press any key or mouse button..."
+    local conn
+    conn = UserInputService.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+            AimbotHotkey = input.KeyCode
+            AimbotMouseHotkey = nil
+            StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+            conn:Disconnect()
+        elseif input.UserInputType.Name:find("MouseButton") then
+            AimbotMouseHotkey = input.UserInputType
+            AimbotHotkey = nil
+            StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+            conn:Disconnect()
+        end
+    end)
+end)
+
+-- FOV Toggle Button
+createButton(CombatFrame,"Toggle FOV",0.26,function()
+    FOVEnabled = not FOVEnabled
+end)
+
+-- TEAMCHECK BUTTON (On/Off)
+local TeamCheckButton = createButton(CombatFrame,"Team Check: OFF",0.34,function()
+    TeamCheckEnabled = not TeamCheckEnabled
+    if TeamCheckEnabled then
+        TeamCheckButton.Text = "Team Check: ON"
+        TeamCheckButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        TeamCheckButton.Text = "Team Check: OFF"
+        TeamCheckButton.BackgroundColor3 = Color3.fromRGB(40,40,50)
+    end
+end)
+
+-- AUTO AIM HOLD BUTTON
+local AutoAimButton = createButton(CombatFrame,"AutoAim Hold: OFF",0.42,function()
+    AutoAimEnabled = not AutoAimEnabled
+    if AutoAimEnabled then
+        AutoAimButton.Text = "AutoAim Hold: ON"
+        AutoAimButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    else
+        AutoAimButton.Text = "AutoAim Hold: OFF"
+        AutoAimButton.BackgroundColor3 = Color3.fromRGB(40,40,50)
+        -- Stelle sicher dass Aimbot deaktiviert wird wenn AutoAim ausgeschaltet wird
+        if isAimbotForced then
+            AimbotEnabled = originalAimbotState
+            isAimbotForced = false
+        end
+    end
+    StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+    StatusLabel.TextColor3 = AimbotEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+end)
+
+-- ====================
+-- FOV Slider
+-- ====================
+local SliderBG = Instance.new("Frame",CombatFrame)
+SliderBG.Size = UDim2.new(0.8,0,0,20)
+SliderBG.Position = UDim2.new(0.1,0,0.52,0)
+SliderBG.BackgroundColor3 = Color3.fromRGB(50,50,50)
+SliderBG.BorderSizePixel = 0
+
+local SliderHandle = Instance.new("Frame",SliderBG)
+SliderHandle.Size = UDim2.new(FOVSize/500,0,1,0)
+SliderHandle.Position = UDim2.new(0,0,0,0)
+SliderHandle.BackgroundColor3 = Color3.fromRGB(255,50,50)
+SliderHandle.BorderSizePixel = 0
+
+SliderHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        MainFrame.Active = false
+        local dragConn
+        dragConn = UserInputService.InputChanged:Connect(function(inp)
+            if inp.UserInputType==Enum.UserInputType.MouseMovement then
+                local mouseX = math.clamp(inp.Position.X - SliderBG.AbsolutePosition.X,0,SliderBG.AbsoluteSize.X)
+                local relX = mouseX / SliderBG.AbsoluteSize.X
+                FOVSize = 50 + relX * 450
+                SliderHandle.Size = UDim2.new(relX,0,1,0)
+            end
+        end)
+        local releaseConn
+        releaseConn = UserInputService.InputEnded:Connect(function(inp)
+            if inp.UserInputType==Enum.UserInputType.MouseButton1 then
+                dragConn:Disconnect()
+                releaseConn:Disconnect()
+                MainFrame.Active = true
+            end
+        end)
+    end
+end)
+
+-- Hotkey Toggle für Tastatur UND Maus
+UserInputService.InputBegan:Connect(function(input)
+    -- Tastatur-Hotkey
+    if AimbotHotkey and input.KeyCode == AimbotHotkey then
+        AimbotEnabled = not AimbotEnabled
+        StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+        StatusLabel.TextColor3 = AimbotEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+    end
+    
+    -- Maus-Hotkey
+    if AimbotMouseHotkey and input.UserInputType == AimbotMouseHotkey then
+        AimbotEnabled = not AimbotEnabled
+        StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+        StatusLabel.TextColor3 = AimbotEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+    end
+end)
+
+-- AUTO AIM HOLD LOGIC - VERBESSERT
+local originalAimbotState = false
+local isAimbotForced = false
+local autoAimConnection1, autoAimConnection2
+
+-- Entferne alte Connections wenn AutoAim ausgeschaltet wird
+AutoAimButton.MouseButton1Click:Connect(function()
+    if not AutoAimEnabled then
+        if autoAimConnection1 then
+            autoAimConnection1:Disconnect()
+            autoAimConnection1 = nil
+        end
+        if autoAimConnection2 then
+            autoAimConnection2:Disconnect()
+            autoAimConnection2 = nil
+        end
+    end
+end)
+
+-- InputBegan Connection für AutoAim
+autoAimConnection1 = UserInputService.InputBegan:Connect(function(input)
+    if AutoAimEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+        -- Speichere originalen Aimbot Zustand
+        originalAimbotState = AimbotEnabled
+        
+        -- Aktiviere Aimbot solange M1 gedrückt wird
+        AimbotEnabled = true
+        isAimbotForced = true
+        
+        -- Update Status
+        StatusLabel.Text = "Aimbot: HOLD | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+        StatusLabel.TextColor3 = Color3.fromRGB(50,255,50)
+    end
+end)
+
+-- InputEnded Connection für AutoAim
+autoAimConnection2 = UserInputService.InputEnded:Connect(function(input)
+    if AutoAimEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 and isAimbotForced then
+        -- Stelle originalen Aimbot Zustand wieder her
+        AimbotEnabled = originalAimbotState
+        isAimbotForced = false
+        
+        -- Update Status
+        StatusLabel.Text = "Aimbot: "..(AimbotEnabled and "ON" or "OFF").." | AutoAim: "..(AutoAimEnabled and "ON" or "OFF")
+        StatusLabel.TextColor3 = AimbotEnabled and Color3.fromRGB(50,255,50) or Color3.fromRGB(255,50,50)
+    end
+end)
+
+-- ====================
+-- VISUAL ESP
+-- ====================
+local ESPFolder = Instance.new("Folder",game.CoreGui)
+ESPFolder.Name = "ESP_Folder"
+local ESPEnabled = false
+local SkeletonEnabled = false
+local TracersEnabled = false
+local FOVTargetLinesEnabled = false
+local BoxESPEnabled = false
+local DrawingObjects = {}
+
+local function updateESP()
+    for _,obj in pairs(ESPFolder:GetChildren()) do
+        if obj:IsA("Highlight") then obj:Destroy() end
+    end
+    for _,obj in pairs(DrawingObjects) do
+        if obj and obj.Type=="Line" then obj:Remove() end
+    end
+end
+
+-- NEU: Funktion um ESP für einen bestimmten Spieler sofort zu aktivieren
+local function applyESPToPlayer(player)
+    if player == LocalPlayer then return end
+    
+    local char = player.Character
+    if not char then return end
+    
+    -- TeamCheck
+    if TeamCheckEnabled and player.Team == LocalPlayer.Team then
+        return
+    end
+    
+    -- Highlight sofort anwenden
+    if ESPEnabled and not char:FindFirstChild("ESPHighlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "ESPHighlight"
+        highlight.Adornee = char
+        highlight.FillColor = Color3.fromRGB(150, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 50, 50)
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = ESPFolder
+    end
+end
+
+-- NEU: Funktion um ESP für alle Spieler sofort zu aktivieren
+local function applyESPToAllPlayers()
+    for _, player in pairs(Players:GetPlayers()) do
+        applyESPToPlayer(player)
+    end
+end
+
+local ESPButtons = {}
+ESPButtons["Highlight"] = createButton(VisualFrame,"ESP Highlight (F2)",0.08,function()
+    ESPEnabled = not ESPEnabled
+    if ESPEnabled then
+        -- Wenn aktiviert, sofort auf alle Spieler anwenden
+        applyESPToAllPlayers()
+    else
+        updateESP()
+    end
+end)
+ESPButtons["Skeletons"] = createButton(VisualFrame,"Skeletons (F3)",0.16,function()
+    SkeletonEnabled = not SkeletonEnabled
+    if not SkeletonEnabled then updateESP() end
+end)
+ESPButtons["Tracers"] = createButton(VisualFrame,"Tracers (F4)",0.24,function()
+    TracersEnabled = not TracersEnabled
+    if not TracersEnabled then updateESP() end
+end)
+
+-- FOV Target Lines Button
+ESPButtons["FOVTargetLines"] = createButton(VisualFrame,"FOV Target Lines (F6)",0.32,function()
+    FOVTargetLinesEnabled = not FOVTargetLinesEnabled
+    if not FOVTargetLinesEnabled then updateESP() end
+end)
+
+-- BOX ESP BUTTON
+ESPButtons["BoxESP"] = createButton(VisualFrame,"Box ESP (F7)",0.40,function()
+    BoxESPEnabled = not BoxESPEnabled
+    if not BoxESPEnabled then updateESP() end
+end)
+
+-- Rejoin Button
+createButton(VisualFrame,"Rejoin",0.48,function()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+end)
+
+-- Activate All Button
+createButton(VisualFrame,"Activate All (F5)",0.56,function()
+    ESPEnabled = true
+    SkeletonEnabled = true
+    TracersEnabled = true
+    FOVTargetLinesEnabled = true
+    BoxESPEnabled = true
+    -- Sofort auf alle Spieler anwenden
+    applyESPToAllPlayers()
+end)
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode==Enum.KeyCode.F2 then
+        ESPButtons["Highlight"]:MouseButton1Click()
+    elseif input.KeyCode==Enum.KeyCode.F3 then
+        ESPButtons["Skeletons"]:MouseButton1Click()
+    elseif input.KeyCode==Enum.KeyCode.F4 then
+        ESPButtons["Tracers"]:MouseButton1Click()
+    elseif input.KeyCode==Enum.KeyCode.F5 then
+        ESPEnabled = not ESPEnabled
+        SkeletonEnabled = not SkeletonEnabled
+        TracersEnabled = not TracersEnabled
+        FOVTargetLinesEnabled = not FOVTargetLinesEnabled
+        BoxESPEnabled = not BoxESPEnabled
+        if ESPEnabled then
+            applyESPToAllPlayers()
+        end
+    elseif input.KeyCode==Enum.KeyCode.F6 then
+        ESPButtons["FOVTargetLines"]:MouseButton1Click()
+    elseif input.KeyCode==Enum.KeyCode.F7 then
+        ESPButtons["BoxESP"]:MouseButton1Click()
+    end
+end)
+
+-- NEU: Player Added Event - Für neue Spieler
+Players.PlayerAdded:Connect(function(player)
+    -- Warte bis der Character geladen ist
+    player.CharacterAdded:Connect(function(char)
+        if ESPEnabled then
+            applyESPToPlayer(player)
+        end
+    end)
+    
+    -- Falls der Character bereits existiert
+    if player.Character and ESPEnabled then
+        applyESPToPlayer(player)
+    end
+end)
+
+-- NEU: Character Added Event - Für gestorbene/wiederbelebte Spieler
+for _, player in pairs(Players:GetPlayers()) do
+    player.CharacterAdded:Connect(function(char)
+        if ESPEnabled then
+            wait(0.5) -- Kurz warten bis Character vollständig geladen ist
+            applyESPToPlayer(player)
+        end
+    end)
+end
+
+-- Sofort ESP auf alle vorhandenen Spieler anwenden
+if ESPEnabled then
+    applyESPToAllPlayers()
+end
+
+-- ====================
+-- Aimbot Logic (MIT TEAMCHECK)
+-- ====================
+local function findNearestToCenterWithFOV()
+    local closestPlayer = nil
+    local closestDistance = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    for _,player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            -- TeamCheck: Wenn aktiv, ignoriere Teamkameraden
+            if TeamCheckEnabled and player.Team == LocalPlayer.Team then
+                continue
+            end
+            
+            local head = player.Character:FindFirstChild("Head")
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if head and humanoid and humanoid.Health>0 then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local distToCenter = (Vector2.new(screenPos.X,screenPos.Y)-screenCenter).Magnitude
+                    if not FOVEnabled or distToCenter<=FOVSize then
+                        if distToCenter<closestDistance then
+                            closestDistance = distToCenter
+                            closestPlayer = head
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+RunService.RenderStepped:Connect(function()
+    if AimbotEnabled then
+        local target = findNearestToCenterWithFOV()
+        if target then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position,target.Position)
+        end
+    end
+end)
+
+-- ====================
+-- ESP, Skeletons, Tracers + FOV Circle + FOV Target Lines + Box ESP
+-- ====================
+RunService.RenderStepped:Connect(function()
+    for _,obj in pairs(DrawingObjects) do
+        if obj then obj:Remove() end
+    end
+    DrawingObjects = {}
+
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            -- TeamCheck für ESP
+            if TeamCheckEnabled and p.Team == LocalPlayer.Team then
+                continue
+            end
+            
+            local char = p.Character
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum and hum.Health>0 then
+                -- Highlight (wird jetzt automatisch bei CharacterAdded angewendet)
+                -- Skeletons (Rot)
+                if SkeletonEnabled then
+                    local bones = {}
+                    if char:FindFirstChild("Torso") then
+                        local head = char:FindFirstChild("Head")
+                        local torso = char:FindFirstChild("Torso")
+                        local larm = char:FindFirstChild("Left Arm")
+                        local rarm = char:FindFirstChild("Right Arm")
+                        local lleg = char:FindFirstChild("Left Leg")
+                        local rleg = char:FindFirstChild("Right Leg")
+                        if head and torso and larm and rarm and lleg and rleg then
+                            bones = {
+                                {head,torso},{torso,larm},{torso,rarm},{torso,lleg},{torso,rleg},
+                                {larm,larm.Position + (torso.Position-larm.Position)*0.3},
+                                {rarm,rarm.Position + (torso.Position-rarm.Position)*0.3},
+                                {lleg,lleg.Position + (torso.Position-lleg.Position)*0.3},
+                                {rleg,rleg.Position + (torso.Position-rleg.Position)*0.3}
+                            }
+                        end
+                    else
+                        bones = {
+                            {"Head","UpperTorso"},{"UpperTorso","LowerTorso"},
+                            {"UpperTorso","LeftUpperArm"},{"LeftUpperArm","LeftLowerArm"},{"LeftLowerArm","LeftHand"},
+                            {"UpperTorso","RightUpperArm"},{"RightUpperArm","RightLowerArm"},{"RightLowerArm","RightHand"},
+                            {"LowerTorso","LeftUpperLeg"},{"LeftUpperLeg","LeftLowerLeg"},{"LeftLowerLeg","LeftFoot"},
+                            {"LowerTorso","RightUpperLeg"},{"RightUpperLeg","RightLowerLeg"},{"RightLowerLeg","RightFoot"}
+                        }
+                    end
+
+                    for _,pair in pairs(bones) do
+                        local partA, partB
+                        if typeof(pair[1])=="Instance" then
+                            partA = pair[1]
+                            partB = pair[2]
+                            if typeof(partB)~="Instance" then
+                                partB = Instance.new("Part")
+                                partB.Position = pair[2]
+                            end
+                        else
+                            partA = char:FindFirstChild(pair[1])
+                            partB = char:FindFirstChild(pair[2])
+                        end
+                        if partA and partB then
+                            local posA, onScreenA = Camera:WorldToViewportPoint(partA.Position)
+                            local posB, onScreenB = Camera:WorldToViewportPoint(partB.Position)
+                            if onScreenA and onScreenB then
+                                local line = Drawing.new("Line")
+                                line.Visible = true
+                                line.From = Vector2.new(posA.X,posA.Y)
+                                line.To = Vector2.new(posB.X,posB.Y)
+                                line.Color = Color3.fromRGB(255, 50, 50)
+                                line.Thickness = 1
+                                table.insert(DrawingObjects,line)
+                            end
+                        end
+                    end
+                end
+
+                -- Tracers (Rot) - VON OBEN IN DER MITTE
+                if TracersEnabled then
+                    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+                    if root then
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                        if onScreen then
+                            local line = Drawing.new("Line")
+                            line.Visible = true
+                            -- Startet jetzt oben in der Mitte statt unten in der Mitte
+                            line.From = Vector2.new(Camera.ViewportSize.X/2, 0)
+                            line.To = Vector2.new(screenPos.X, screenPos.Y)
+                            line.Color = Color3.fromRGB(255, 50, 50)
+                            line.Thickness = 1
+                            table.insert(DrawingObjects,line)
+                        end
+                    end
+                end
+
+                -- BOX ESP (Rote Box um Spieler)
+                if BoxESPEnabled then
+                    local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+                    if root then
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                        if onScreen then
+                            -- Berechne Box-Größe basierend auf Entfernung
+                            local distance = (root.Position - Camera.CFrame.Position).Magnitude
+                            local boxSize = Vector2.new(40, 60) * (100 / math.max(distance, 10))
+                            
+                            -- Zeichne Box
+                            local topLeft = Vector2.new(screenPos.X - boxSize.X/2, screenPos.Y - boxSize.Y/2)
+                            local topRight = Vector2.new(screenPos.X + boxSize.X/2, screenPos.Y - boxSize.Y/2)
+                            local bottomLeft = Vector2.new(screenPos.X - boxSize.X/2, screenPos.Y + boxSize.Y/2)
+                            local bottomRight = Vector2.new(screenPos.X + boxSize.X/2, screenPos.Y + boxSize.Y/2)
+                            
+                            -- Box Linien zeichnen
+                            local boxLines = {
+                                {topLeft, topRight},
+                                {topRight, bottomRight},
+                                {bottomRight, bottomLeft},
+                                {bottomLeft, topLeft}
+                            }
+                            
+                            for _, linePoints in pairs(boxLines) do
+                                local boxLine = Drawing.new("Line")
+                                boxLine.Visible = true
+                                boxLine.From = linePoints[1]
+                                boxLine.To = linePoints[2]
+                                boxLine.Color = Color3.fromRGB(255, 50, 50)
+                                boxLine.Thickness = 2
+                                table.insert(DrawingObjects, boxLine)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- FOV TARGET LINES
+    if FOVTargetLinesEnabled and FOVEnabled then
+        local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        
+        for _,player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                -- TeamCheck für FOV Lines
+                if TeamCheckEnabled and player.Team == LocalPlayer.Team then
+                    continue
+                end
+                
+                local char = player.Character
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local head = char:FindFirstChild("Head")
+                
+                if hum and hum.Health > 0 and head then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                    
+                    if onScreen then
+                        local distToCenter = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                        
+                        -- Nur zeichnen wenn Spieler im FOV Circle ist
+                        if distToCenter <= FOVSize then
+                            -- Rote Linie von Mitte zu Spieler-Kopf
+                            local line = Drawing.new("Line")
+                            line.Visible = true
+                            line.From = screenCenter
+                            line.To = Vector2.new(screenPos.X, screenPos.Y)
+                            line.Color = Color3.fromRGB(255, 50, 50)
+                            line.Thickness = 1
+                            line.Name = "FOVTargetLine"
+                            table.insert(DrawingObjects, line)
+                            
+                            -- Roter Punkt auf Spieler-Kopf
+                            local dot = Drawing.new("Circle")
+                            dot.Visible = true
+                            dot.Position = Vector2.new(screenPos.X, screenPos.Y)
+                            dot.Radius = 3
+                            dot.Color = Color3.fromRGB(255, 0, 0)
+                            dot.Thickness = 2
+                            dot.Filled = true
+                            dot.Name = "FOVTargetDot"
+                            table.insert(DrawingObjects, dot)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- FOV Circle (Rot)
+    if FOVEnabled then
+        local circle = Drawing.new("Circle")
+        circle.Visible = true
+        circle.Color = Color3.fromRGB(255, 50, 50)
+        circle.Thickness = 1
+        circle.Radius = FOVSize
+        circle.NumSides = 100
+        circle.Filled = false
+        circle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        table.insert(DrawingObjects,circle)
+    end
+end)
+
+print("ONYX v5 FINAL + BOX ESP loaded!")
+print("Hotkeys: F1(Aimbot) F2(ESP) F3(Skeleton) F4(Tracers) F5(All) F6(FOV Lines) F7(Box ESP)")
+print("NEW: ESP Highlight is now applied immediately to all players (new/respawned)!")
+print("NEW: Tracers now start from TOP center instead of bottom!")
+print("All visual elements are now RED!")
