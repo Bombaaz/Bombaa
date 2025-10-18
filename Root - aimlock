@@ -1,0 +1,1360 @@
+-- Serotonin GUI - MIT TEAMCHECK
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+
+-- ====================
+-- GUI SETUP
+-- ====================
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SerotoninGUI"
+ScreenGui.Parent = game.CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 500, 0, 600)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(13, 17, 23)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 1, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Root - .gg/habnochkeindiscord"
+Title.TextColor3 = Color3.fromRGB(248, 249, 250)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = TitleBar
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(248, 249, 250)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 12
+CloseButton.Parent = TitleBar
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Tabs
+local TabContainer = Instance.new("Frame")
+TabContainer.Size = UDim2.new(0, 100, 1, -30)
+TabContainer.Position = UDim2.new(0, 0, 0, 30)
+TabContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+TabContainer.BorderSizePixel = 0
+TabContainer.Parent = MainFrame
+
+local Tabs = {"Aimbot", "Visual"}
+local TabButtons = {}
+local TabFrames = {}
+
+local function createTabButton(name, index)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 40)
+    button.Position = UDim2.new(0, 0, 0, (index-1) * 40)
+    button.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+    button.BorderSizePixel = 0
+    button.Text = name
+    button.TextColor3 = Color3.fromRGB(139, 148, 158)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 12
+    button.Parent = TabContainer
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -100, 1, -30)
+    frame.Position = UDim2.new(0, 100, 0, 30)
+    frame.BackgroundColor3 = Color3.fromRGB(13, 17, 23)
+    frame.BorderSizePixel = 0
+    frame.Visible = index == 1
+    frame.Parent = MainFrame
+    
+    local scrollingFrame = Instance.new("ScrollingFrame")
+    scrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+    scrollingFrame.BackgroundTransparency = 1
+    scrollingFrame.BorderSizePixel = 0
+    scrollingFrame.ScrollBarThickness = 5
+    scrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(48, 54, 61)
+    scrollingFrame.CanvasSize = UDim2.new(0, 0, 3, 0)
+    scrollingFrame.Parent = frame
+    
+    TabButtons[name] = button
+    TabFrames[name] = scrollingFrame
+    
+    button.MouseButton1Click:Connect(function()
+        for _, f in pairs(TabFrames) do
+            f.Parent.Visible = false
+        end
+        frame.Visible = true
+        for _, b in pairs(TabButtons) do
+            b.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+            b.TextColor3 = Color3.fromRGB(139, 148, 158)
+        end
+        button.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+        button.TextColor3 = Color3.fromRGB(248, 249, 250)
+    end)
+end
+
+for i, tab in ipairs(Tabs) do
+    createTabButton(tab, i)
+end
+
+-- UI Functions
+function createSection(parent, title, x, y, width, height)
+    local section = Instance.new("Frame")
+    section.Size = UDim2.new(0, width, 0, height)
+    section.Position = UDim2.new(0, x, 0, y)
+    section.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
+    section.BorderSizePixel = 0
+    section.Parent = parent
+    
+    local sectionTitle = Instance.new("TextLabel")
+    sectionTitle.Size = UDim2.new(1, 0, 0, 25)
+    sectionTitle.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+    sectionTitle.BorderSizePixel = 0
+    sectionTitle.Text = "  " .. title
+    sectionTitle.TextColor3 = Color3.fromRGB(248, 249, 250)
+    sectionTitle.Font = Enum.Font.GothamBold
+    sectionTitle.TextSize = 11
+    sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+    sectionTitle.Parent = section
+    
+    local content = Instance.new("Frame")
+    content.Size = UDim2.new(1, 0, 1, -25)
+    content.Position = UDim2.new(0, 0, 0, 25)
+    content.BackgroundTransparency = 1
+    content.Parent = section
+    
+    return content
+end
+
+function createToggle(parent, text, defaultState, hotkey, callback)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, -20, 0, 25)
+    toggleFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 30)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.Parent = parent
+    
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 18, 0, 18)
+    toggleButton.Position = UDim2.new(0, 0, 0, 3)
+    toggleButton.BackgroundColor3 = defaultState and Color3.fromRGB(35, 134, 54) or Color3.fromRGB(48, 54, 61)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Text = ""
+    toggleButton.Parent = toggleFrame
+    
+    local toggleLabel = Instance.new("TextLabel")
+    toggleLabel.Size = UDim2.new(0, 110, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 25, 0, 0)
+    toggleLabel.BackgroundTransparency = 1
+    toggleLabel.Text = text
+    toggleLabel.TextColor3 = Color3.fromRGB(248, 249, 250)
+    toggleLabel.Font = Enum.Font.Gotham
+    toggleLabel.TextSize = 10
+    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    toggleLabel.Parent = toggleFrame
+    
+    local hotkeyButton = Instance.new("TextButton")
+    hotkeyButton.Size = UDim2.new(0, 50, 0, 18)
+    hotkeyButton.Position = UDim2.new(1, -50, 0, 3)
+    hotkeyButton.BackgroundColor3 = Color3.fromRGB(48, 54, 61)
+    hotkeyButton.BorderSizePixel = 0
+    hotkeyButton.Text = hotkey
+    hotkeyButton.TextColor3 = Color3.fromRGB(139, 148, 158)
+    hotkeyButton.Font = Enum.Font.Gotham
+    hotkeyButton.TextSize = 9
+    hotkeyButton.Parent = toggleFrame
+    
+    local settingHotkey = false
+    
+    hotkeyButton.MouseButton1Click:Connect(function()
+        settingHotkey = true
+        hotkeyButton.Text = "..."
+        hotkeyButton.BackgroundColor3 = Color3.fromRGB(35, 134, 54)
+    end)
+    
+    local function handleHotkey(input)
+        if settingHotkey then
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                local key = input.KeyCode.Name
+                hotkeyButton.Text = key
+                hotkeyButton.BackgroundColor3 = Color3.fromRGB(48, 54, 61)
+                settingHotkey = false
+                return key
+            elseif input.UserInputType.Name:find("MouseButton") then
+                local mouseKey = input.UserInputType.Name
+                hotkeyButton.Text = mouseKey
+                hotkeyButton.BackgroundColor3 = Color3.fromRGB(48, 54, 61)
+                settingHotkey = false
+                return mouseKey
+            end
+        end
+        return nil
+    end
+    
+    UserInputService.InputBegan:Connect(function(input)
+        local newHotkey = handleHotkey(input)
+        if newHotkey then
+            hotkey = newHotkey
+        else
+            if (input.KeyCode.Name == hotkey) or (input.UserInputType.Name == hotkey) then
+                local newState = not (toggleButton.BackgroundColor3 == Color3.fromRGB(35, 134, 54))
+                toggleButton.BackgroundColor3 = newState and Color3.fromRGB(35, 134, 54) or Color3.fromRGB(48, 54, 61)
+                callback(newState)
+            end
+        end
+    end)
+    
+    toggleButton.MouseButton1Click:Connect(function()
+        local newState = not (toggleButton.BackgroundColor3 == Color3.fromRGB(35, 134, 54))
+        toggleButton.BackgroundColor3 = newState and Color3.fromRGB(35, 134, 54) or Color3.fromRGB(48, 54, 61)
+        callback(newState)
+    end)
+    
+    return toggleFrame
+end
+
+function createSlider(parent, text, min, max, default, callback)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Size = UDim2.new(1, -20, 0, 40)
+    sliderFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 45)
+    sliderFrame.BackgroundTransparency = 1
+    sliderFrame.Parent = parent
+    
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Size = UDim2.new(1, 0, 0, 15)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.Text = text
+    sliderLabel.TextColor3 = Color3.fromRGB(248, 249, 250)
+    sliderLabel.Font = Enum.Font.Gotham
+    sliderLabel.TextSize = 10
+    sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sliderLabel.Parent = sliderFrame
+    
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 40, 0, 15)
+    valueLabel.Position = UDim2.new(1, -40, 0, 0)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.fromRGB(139, 148, 158)
+    valueLabel.Font = Enum.Font.Gotham
+    valueLabel.TextSize = 9
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.Parent = sliderFrame
+    
+    local sliderBG = Instance.new("Frame")
+    sliderBG.Size = UDim2.new(1, 0, 0, 4)
+    sliderBG.Position = UDim2.new(0, 0, 0, 20)
+    sliderBG.BackgroundColor3 = Color3.fromRGB(48, 54, 61)
+    sliderBG.BorderSizePixel = 0
+    sliderBG.Parent = sliderFrame
+    
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(35, 134, 54)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderBG
+    
+    local sliderHandle = Instance.new("TextButton")
+    sliderHandle.Size = UDim2.new(0, 8, 0, 12)
+    sliderHandle.Position = UDim2.new((default - min) / (max - min), -4, 0, -4)
+    sliderHandle.BackgroundColor3 = Color3.fromRGB(248, 249, 250)
+    sliderHandle.BorderSizePixel = 0
+    sliderHandle.Text = ""
+    sliderHandle.Parent = sliderFrame
+    
+    local dragging = false
+    
+    sliderHandle.MouseButton1Down:Connect(function()
+        dragging = true
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    local function updateSlider(value)
+        value = math.clamp(value, min, max)
+        valueLabel.Text = tostring(value)
+        local percentage = (value - min) / (max - min)
+        sliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+        sliderHandle.Position = UDim2.new(percentage, -4, 0, -4)
+        callback(value)
+    end
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePos = UserInputService:GetMouseLocation()
+            local sliderAbsolutePos = sliderBG.AbsolutePosition
+            local sliderAbsoluteSize = sliderBG.AbsoluteSize.X
+            
+            local relativeX = math.clamp(mousePos.X - sliderAbsolutePos.X, 0, sliderAbsoluteSize)
+            local percentage = relativeX / sliderAbsoluteSize
+            local value = math.floor(min + (max - min) * percentage)
+            
+            updateSlider(value)
+        end
+    end)
+    
+    return sliderFrame
+end
+
+-- DROPDOWN FUNKTION
+function createDropdown(parent, text, options, default, callback)
+    local dropdownFrame = Instance.new("Frame")
+    dropdownFrame.Size = UDim2.new(1, -20, 0, 25)
+    dropdownFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 30)
+    dropdownFrame.BackgroundTransparency = 1
+    dropdownFrame.Parent = parent
+    
+    local dropdownLabel = Instance.new("TextLabel")
+    dropdownLabel.Size = UDim2.new(0, 90, 1, 0)
+    dropdownLabel.BackgroundTransparency = 1
+    dropdownLabel.Text = text
+    dropdownLabel.TextColor3 = Color3.fromRGB(248, 249, 250)
+    dropdownLabel.Font = Enum.Font.Gotham
+    dropdownLabel.TextSize = 10
+    dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+    dropdownLabel.Parent = dropdownFrame
+    
+    local dropdownButton = Instance.new("TextButton")
+    dropdownButton.Size = UDim2.new(0, 90, 0, 20)
+    dropdownButton.Position = UDim2.new(1, -90, 0, 2)
+    dropdownButton.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+    dropdownButton.BorderSizePixel = 0
+    dropdownButton.Text = default
+    dropdownButton.TextColor3 = Color3.fromRGB(248, 249, 250)
+    dropdownButton.Font = Enum.Font.Gotham
+    dropdownButton.TextSize = 9
+    dropdownButton.Parent = dropdownFrame
+    
+    local dropdownOpen = false
+    local currentSelection = default
+    
+    dropdownButton.MouseButton1Click:Connect(function()
+        if dropdownOpen then 
+            for _, obj in pairs(parent:GetChildren()) do
+                if obj:IsA("Frame") and obj.Name == "DropdownOptions" then
+                    obj:Destroy()
+                end
+            end
+            dropdownOpen = false
+            return 
+        end
+        
+        dropdownOpen = true
+        
+        for _, obj in pairs(parent:GetChildren()) do
+            if obj:IsA("Frame") and obj.Name == "DropdownOptions" then
+                obj:Destroy()
+            end
+        end
+        
+        local dropdownOptions = Instance.new("Frame")
+        dropdownOptions.Name = "DropdownOptions"
+        dropdownOptions.Size = UDim2.new(0, 90, 0, #options * 20)
+        dropdownOptions.Position = UDim2.new(1, -90, 1, 0)
+        dropdownOptions.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+        dropdownOptions.BorderSizePixel = 0
+        dropdownOptions.ZIndex = 100
+        dropdownOptions.Parent = dropdownFrame
+        
+        for i, option in ipairs(options) do
+            local optionButton = Instance.new("TextButton")
+            optionButton.Size = UDim2.new(1, 0, 0, 20)
+            optionButton.Position = UDim2.new(0, 0, 0, (i-1) * 20)
+            optionButton.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+            optionButton.BorderSizePixel = 0
+            optionButton.Text = option
+            optionButton.TextColor3 = Color3.fromRGB(248, 249, 250)
+            optionButton.Font = Enum.Font.Gotham
+            optionButton.TextSize = 9
+            optionButton.ZIndex = 101
+            optionButton.Parent = dropdownOptions
+            
+            optionButton.MouseButton1Click:Connect(function()
+                currentSelection = option
+                dropdownButton.Text = option
+                callback(option)
+                dropdownOptions:Destroy()
+                dropdownOpen = false
+            end)
+        end
+        
+        local connection
+        connection = UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local mousePos = input.Position
+                local absolutePos = dropdownOptions.AbsolutePosition
+                local absoluteSize = dropdownOptions.AbsoluteSize
+                
+                if not (mousePos.X >= absolutePos.X and mousePos.X <= absolutePos.X + absoluteSize.X and
+                       mousePos.Y >= absolutePos.Y and mousePos.Y <= absolutePos.Y + absoluteSize.Y) then
+                    dropdownOptions:Destroy()
+                    dropdownOpen = false
+                    connection:Disconnect()
+                end
+            end
+        end)
+    end)
+    
+    return dropdownFrame
+end
+
+-- ====================
+-- GLOBALE VARIABLEN
+-- ====================
+local AimbotEnabled = false
+local AimbotHotkey = "MouseButton2"
+local TriggerbotEnabled = false
+local TriggerbotHotkey = "MouseButton4"
+local AimbotFOV = 100
+local AimbotSmoothness = 10
+local AimbotMethod = "Mouse"
+local TargetMode = "Head"
+local FOVCircleEnabled = false
+local ShowTargetEnabled = false
+local TargetPriority = "Crosshair"
+local WallCheckEnabled = true
+local TriggerbotDelay = 50
+local TriggerbotHitchance = 100
+local TeamCheckEnabled = false
+
+-- ESP VARIABLEN
+local BoxESPEnabled = false
+local TracerESPEnabled = false
+local NameESPEnabled = false
+local HealthBarESPEnabled = false
+local DistanceESPEnabled = false
+local ChamsEnabled = false
+local SkeletonESPEnabled = false
+
+local ESPDrawings = {}
+local FOVCircle = Drawing.new("Circle")
+local TargetIndicator = Drawing.new("Square")
+local LastTriggerTime = 0
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local ChamFolder = Instance.new("Folder", game.CoreGui)
+ChamFolder.Name = "Cham_Folder"
+
+-- ====================
+-- AIMBOT TAB - MIT TEAMCHECK & PERFEKTER ANORDNUNG
+-- ====================
+local AimbotFrame = TabFrames["Aimbot"]
+AimbotFrame.CanvasSize = UDim2.new(0, 0, 0, 700)
+
+-- Main Aimbot Section
+local MainAimbotSection = createSection(AimbotFrame, "Main Aimbot", 10, 10, 360, 310)
+
+createToggle(MainAimbotSection, "Aimbot", false, AimbotHotkey, function(state)
+    AimbotEnabled = state
+    print("Aimbot:", state)
+end)
+
+createDropdown(MainAimbotSection, "Aim Method", {"Mouse", "Camera"}, "Mouse", function(selected)
+    AimbotMethod = selected
+    print("Aim Method:", selected)
+end)
+
+createDropdown(MainAimbotSection, "Target Mode", {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}, "Head", function(selected)
+    TargetMode = selected
+    print("Target Mode:", selected)
+end)
+
+createDropdown(MainAimbotSection, "Target Priority", {"Crosshair", "Nearest", "Distance"}, "Crosshair", function(selected)
+    TargetPriority = selected
+    print("Target Priority:", selected)
+end)
+
+-- TEAMCHECK TOGGLE - JETZT DIREKT ÜBER DEN SLIDERS
+createToggle(MainAimbotSection, "Team Check", false, "", function(state)
+    TeamCheckEnabled = state
+    print("Team Check:", state)
+end)
+
+-- SMOOTHNESS SLIDER - DIREKT UNTER TEAMCHECK MIT PERFEKTEM ABSTAND
+createSlider(MainAimbotSection, "Smoothness", 1, 30, 10, function(value)
+    AimbotSmoothness = value
+    print("Smoothness:", value)
+end)
+
+-- AIMBOT FOV SLIDER - DIREKT UNTER SMOOTHNESS MIT PERFEKTEM ABSTAND
+createSlider(MainAimbotSection, "Aimbot FOV", 0, 500, 100, function(value)
+    AimbotFOV = value
+    print("Aimbot FOV:", value)
+end)
+
+-- Extra Features Section - Position angepasst
+local ExtraAimbotSection = createSection(AimbotFrame, "Extra Features", 10, 330, 360, 120)
+
+createToggle(ExtraAimbotSection, "FOV Circle", false, "", function(state)
+    FOVCircleEnabled = state
+    print("FOV Circle:", state)
+end)
+
+createToggle(ExtraAimbotSection, "Show Target", false, "", function(state)
+    ShowTargetEnabled = state
+    print("Show Target:", state)
+end)
+
+createToggle(ExtraAimbotSection, "Wall Check", true, "", function(state)
+    WallCheckEnabled = state
+    print("Wall Check:", state)
+end)
+
+-- Triggerbot Section - Position angepasst
+local TriggerbotSection = createSection(AimbotFrame, "Triggerbot", 10, 460, 360, 150)
+
+createToggle(TriggerbotSection, "Triggerbot", false, TriggerbotHotkey, function(state)
+    TriggerbotEnabled = state
+    print("Triggerbot:", state)
+end)
+
+createSlider(TriggerbotSection, "Trigger Delay", 0, 500, 50, function(value)
+    TriggerbotDelay = value
+    print("Trigger Delay:", value)
+end)
+
+createSlider(TriggerbotSection, "Hitchance", 0, 100, 100, function(value)
+    TriggerbotHitchance = value
+    print("Hitchance:", value)
+end)
+
+-- ====================
+-- VISUAL TAB - MIT PERFEKTEN SKELETTEN
+-- ====================
+local VisualFrame = TabFrames["Visual"]
+VisualFrame.CanvasSize = UDim2.new(0, 0, 0, 500)
+
+-- Player ESP Section - MIT CHAMS UND SKELETON
+local PlayerESPSection = createSection(VisualFrame, "Player ESP", 10, 10, 360, 280)
+
+createToggle(PlayerESPSection, "Box ESP", false, "F1", function(state)
+    BoxESPEnabled = state
+    print("Box ESP:", state)
+end)
+
+createToggle(PlayerESPSection, "Tracer ESP", false, "F2", function(state)
+    TracerESPEnabled = state
+    print("Tracer ESP:", state)
+end)
+
+createToggle(PlayerESPSection, "Name ESP", false, "F3", function(state)
+    NameESPEnabled = state
+    print("Name ESP:", state)
+end)
+
+createToggle(PlayerESPSection, "Health Bar ESP", false, "F4", function(state)
+    HealthBarESPEnabled = state
+    print("Health Bar ESP:", state)
+end)
+
+createToggle(PlayerESPSection, "Distance ESP", false, "F5", function(state)
+    DistanceESPEnabled = state
+    print("Distance ESP:", state)
+end)
+
+-- SKELETON ESP HINZUGEFÜGT
+createToggle(PlayerESPSection, "Skeleton ESP", false, "F7", function(state)
+    SkeletonESPEnabled = state
+    print("Skeleton ESP:", state)
+end)
+
+-- CHAMS ALS FUNKTION IN PLAYER ESP SECTION
+createToggle(PlayerESPSection, "Chams", false, "F6", function(state)
+    ChamsEnabled = state
+    print("Chams:", state)
+    if not state then
+        for _, obj in pairs(ChamFolder:GetChildren()) do
+            obj:Destroy()
+        end
+    end
+end)
+
+-- Visual Effects Section
+local EffectsSection = createSection(VisualFrame, "Visual Effects", 10, 300, 360, 120)
+
+createToggle(EffectsSection, "No Fog", false, "", function(state)
+    if state then
+        Lighting.FogEnd = 100000
+    else
+        Lighting.FogEnd = 1000
+    end
+    print("No Fog:", state)
+end)
+
+createToggle(EffectsSection, "Full Bright", false, "", function(state)
+    if state then
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Brightness = 2
+    else
+        Lighting.Ambient = Color3.new(0, 0, 0)
+        Lighting.Brightness = 1
+    end
+    print("Full Bright:", state)
+end)
+
+createToggle(EffectsSection, "No Shadows", false, "", function(state)
+    Lighting.GlobalShadows = not state
+    print("No Shadows:", state)
+end)
+
+-- ====================
+-- ESP & AIMBOT SYSTEM
+-- ====================
+FOVCircle.Visible = false
+FOVCircle.Color = Color3.new(1, 1, 1)
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 100
+FOVCircle.Filled = false
+
+-- TARGET INDICATOR FARBE VON GRÜN AUF ROT GEÄNDERT
+TargetIndicator.Visible = false
+TargetIndicator.Color = Color3.new(1, 0, 0) -- JETZT ROT STATT GRÜN
+TargetIndicator.Thickness = 2
+TargetIndicator.Filled = false
+TargetIndicator.Size = Vector2.new(10, 10)
+
+-- TEAMCHECK FUNKTION
+local function isEnemy(player)
+    if not TeamCheckEnabled then
+        return true -- Wenn TeamCheck aus ist, sind alle Feinde
+    end
+    
+    -- Überprüfe ob der Spieler im selben Team ist
+    local localPlayerTeam = LocalPlayer.Team
+    local targetPlayerTeam = player.Team
+    
+    -- Wenn keine Teams vorhanden sind, sind alle Feinde
+    if not localPlayerTeam or not targetPlayerTeam then
+        return true
+    end
+    
+    -- Wenn im selben Team, dann kein Feind
+    if localPlayerTeam == targetPlayerTeam then
+        return false
+    end
+    
+    return true
+end
+
+-- PERFEKTE SKELETON ESP FUNKTION - CHIRURGIE QUALITÄT
+local function createSkeleton(player)
+    if player == LocalPlayer then return end
+    
+    local skeleton = {
+        -- Hauptkörper
+        HeadToTorso = Drawing.new("Line"),
+        TorsoToHip = Drawing.new("Line"),
+        
+        -- Arme komplett
+        TorsoToLeftShoulder = Drawing.new("Line"),
+        LeftShoulderToLeftElbow = Drawing.new("Line"),
+        LeftElbowToLeftHand = Drawing.new("Line"),
+        
+        TorsoToRightShoulder = Drawing.new("Line"),
+        RightShoulderToRightElbow = Drawing.new("Line"),
+        RightElbowToRightHand = Drawing.new("Line"),
+        
+        -- Beine komplett
+        HipToLeftHip = Drawing.new("Line"),
+        LeftHipToLeftKnee = Drawing.new("Line"),
+        LeftKneeToLeftFoot = Drawing.new("Line"),
+        
+        HipToRightHip = Drawing.new("Line"),
+        RightHipToRightKnee = Drawing.new("Line"),
+        RightKneeToRightFoot = Drawing.new("Line")
+    }
+    
+    -- ALLE SKELETON LINIEN IN WEIß MIT PERFEKTEN LINIEN
+    for _, part in pairs(skeleton) do
+        part.Visible = false
+        part.Color = Color3.new(1, 1, 1) -- REINWEIß
+        part.Thickness = 2 -- Perfekte Dicke für Chirurgie-Look
+    end
+    
+    ESPDrawings[player].Skeleton = skeleton
+end
+
+local function updateSkeleton(player)
+    local skeleton = ESPDrawings[player].Skeleton
+    if not skeleton or not SkeletonESPEnabled then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    -- Skelett-Punkte finden - PRÄZISE WIE CHIRURGIE
+    local head = character:FindFirstChild("Head")
+    local upperTorso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
+    local lowerTorso = character:FindFirstChild("LowerTorso")
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    -- Arme
+    local leftUpperArm = character:FindFirstChild("LeftUpperArm") or character:FindFirstChild("LeftArm")
+    local leftLowerArm = character:FindFirstChild("LeftLowerArm")
+    local leftHand = character:FindFirstChild("LeftHand")
+    
+    local rightUpperArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("RightArm")
+    local rightLowerArm = character:FindFirstChild("RightLowerArm")
+    local rightHand = character:FindFirstChild("RightHand")
+    
+    -- Beine
+    local leftUpperLeg = character:FindFirstChild("LeftUpperLeg") or character:FindFirstChild("LeftLeg")
+    local leftLowerLeg = character:FindFirstChild("LeftLowerLeg")
+    local leftFoot = character:FindFirstChild("LeftFoot")
+    
+    local rightUpperLeg = character:FindFirstChild("RightUpperLeg") or character:FindFirstChild("RightLeg")
+    local rightLowerLeg = character:FindFirstChild("RightLowerLeg")
+    local rightFoot = character:FindFirstChild("RightFoot")
+    
+    if not (head and upperTorso and humanoidRootPart) then
+        for _, bone in pairs(skeleton) do
+            bone.Visible = false
+        end
+        return
+    end
+    
+    -- Positionen berechnen - PRÄZISE ANATOMIE
+    local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
+    local upperTorsoPos, upperTorsoOnScreen = Camera:WorldToViewportPoint(upperTorso.Position)
+    local humanoidRootPos, humanoidRootOnScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
+    
+    -- Hüfte Position approximieren
+    local hipPos = humanoidRootPos
+    if lowerTorso then
+        local lowerTorsoPos = Camera:WorldToViewportPoint(lowerTorso.Position)
+        hipPos = lowerTorsoPos
+    end
+    
+    if headOnScreen and upperTorsoOnScreen and humanoidRootOnScreen then
+        -- KOPF & RÜCKENGRAT - ANATOMISCH KORREKT
+        skeleton.HeadToTorso.From = Vector2.new(headPos.X, headPos.Y)
+        skeleton.HeadToTorso.To = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
+        skeleton.HeadToTorso.Visible = true
+        
+        skeleton.TorsoToHip.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
+        skeleton.TorsoToHip.To = Vector2.new(hipPos.X, hipPos.Y)
+        skeleton.TorsoToHip.Visible = true
+        
+        -- ARME - KOMPLETT MIT SCHULTERN
+        if leftUpperArm then
+            local leftUpperArmPos = Camera:WorldToViewportPoint(leftUpperArm.Position)
+            
+            -- Schulter zu Ellbogen
+            skeleton.TorsoToLeftShoulder.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
+            skeleton.TorsoToLeftShoulder.To = Vector2.new(leftUpperArmPos.X, leftUpperArmPos.Y)
+            skeleton.TorsoToLeftShoulder.Visible = true
+            
+            -- Ellbogen zu Hand
+            if leftLowerArm then
+                local leftLowerArmPos = Camera:WorldToViewportPoint(leftLowerArm.Position)
+                skeleton.LeftShoulderToLeftElbow.From = Vector2.new(leftUpperArmPos.X, leftUpperArmPos.Y)
+                skeleton.LeftShoulderToLeftElbow.To = Vector2.new(leftLowerArmPos.X, leftLowerArmPos.Y)
+                skeleton.LeftShoulderToLeftElbow.Visible = true
+                
+                if leftHand then
+                    local leftHandPos = Camera:WorldToViewportPoint(leftHand.Position)
+                    skeleton.LeftElbowToLeftHand.From = Vector2.new(leftLowerArmPos.X, leftLowerArmPos.Y)
+                    skeleton.LeftElbowToLeftHand.To = Vector2.new(leftHandPos.X, leftHandPos.Y)
+                    skeleton.LeftElbowToLeftHand.Visible = true
+                else
+                    skeleton.LeftElbowToLeftHand.Visible = false
+                end
+            else
+                skeleton.LeftShoulderToLeftElbow.Visible = false
+                skeleton.LeftElbowToLeftHand.Visible = false
+            end
+        else
+            skeleton.TorsoToLeftShoulder.Visible = false
+            skeleton.LeftShoulderToLeftElbow.Visible = false
+            skeleton.LeftElbowToLeftHand.Visible = false
+        end
+        
+        if rightUpperArm then
+            local rightUpperArmPos = Camera:WorldToViewportPoint(rightUpperArm.Position)
+            
+            -- Schulter zu Ellbogen
+            skeleton.TorsoToRightShoulder.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
+            skeleton.TorsoToRightShoulder.To = Vector2.new(rightUpperArmPos.X, rightUpperArmPos.Y)
+            skeleton.TorsoToRightShoulder.Visible = true
+            
+            -- Ellbogen zu Hand
+            if rightLowerArm then
+                local rightLowerArmPos = Camera:WorldToViewportPoint(rightLowerArm.Position)
+                skeleton.RightShoulderToRightElbow.From = Vector2.new(rightUpperArmPos.X, rightUpperArmPos.Y)
+                skeleton.RightShoulderToRightElbow.To = Vector2.new(rightLowerArmPos.X, rightLowerArmPos.Y)
+                skeleton.RightShoulderToRightElbow.Visible = true
+                
+                if rightHand then
+                    local rightHandPos = Camera:WorldToViewportPoint(rightHand.Position)
+                    skeleton.RightElbowToRightHand.From = Vector2.new(rightLowerArmPos.X, rightLowerArmPos.Y)
+                    skeleton.RightElbowToRightHand.To = Vector2.new(rightHandPos.X, rightHandPos.Y)
+                    skeleton.RightElbowToRightHand.Visible = true
+                else
+                    skeleton.RightElbowToRightHand.Visible = false
+                end
+            else
+                skeleton.RightShoulderToRightElbow.Visible = false
+                skeleton.RightElbowToRightHand.Visible = false
+            end
+        else
+            skeleton.TorsoToRightShoulder.Visible = false
+            skeleton.RightShoulderToRightElbow.Visible = false
+            skeleton.RightElbowToRightHand.Visible = false
+        end
+        
+        -- BEINE - KOMPLETT MIT HÜFTE, KNIEN, FÜSSEN
+        if leftUpperLeg then
+            local leftUpperLegPos = Camera:WorldToViewportPoint(leftUpperLeg.Position)
+            
+            -- Hüfte zu Knie
+            skeleton.HipToLeftHip.From = Vector2.new(hipPos.X, hipPos.Y)
+            skeleton.HipToLeftHip.To = Vector2.new(leftUpperLegPos.X, leftUpperLegPos.Y)
+            skeleton.HipToLeftHip.Visible = true
+            
+            -- Knie zu Fuß
+            if leftLowerLeg then
+                local leftLowerLegPos = Camera:WorldToViewportPoint(leftLowerLeg.Position)
+                skeleton.LeftHipToLeftKnee.From = Vector2.new(leftUpperLegPos.X, leftUpperLegPos.Y)
+                skeleton.LeftHipToLeftKnee.To = Vector2.new(leftLowerLegPos.X, leftLowerLegPos.Y)
+                skeleton.LeftHipToLeftKnee.Visible = true
+                
+                if leftFoot then
+                    local leftFootPos = Camera:WorldToViewportPoint(leftFoot.Position)
+                    skeleton.LeftKneeToLeftFoot.From = Vector2.new(leftLowerLegPos.X, leftLowerLegPos.Y)
+                    skeleton.LeftKneeToLeftFoot.To = Vector2.new(leftFootPos.X, leftFootPos.Y)
+                    skeleton.LeftKneeToLeftFoot.Visible = true
+                else
+                    skeleton.LeftKneeToLeftFoot.Visible = false
+                end
+            else
+                skeleton.LeftHipToLeftKnee.Visible = false
+                skeleton.LeftKneeToLeftFoot.Visible = false
+            end
+        else
+            skeleton.HipToLeftHip.Visible = false
+            skeleton.LeftHipToLeftKnee.Visible = false
+            skeleton.LeftKneeToLeftFoot.Visible = false
+        end
+        
+        if rightUpperLeg then
+            local rightUpperLegPos = Camera:WorldToViewportPoint(rightUpperLeg.Position)
+            
+            -- Hüfte zu Knie
+            skeleton.HipToRightHip.From = Vector2.new(hipPos.X, hipPos.Y)
+            skeleton.HipToRightHip.To = Vector2.new(rightUpperLegPos.X, rightUpperLegPos.Y)
+            skeleton.HipToRightHip.Visible = true
+            
+            -- Knie zu Fuß
+            if rightLowerLeg then
+                local rightLowerLegPos = Camera:WorldToViewportPoint(rightLowerLeg.Position)
+                skeleton.RightHipToRightKnee.From = Vector2.new(rightUpperLegPos.X, rightUpperLegPos.Y)
+                skeleton.RightHipToRightKnee.To = Vector2.new(rightLowerLegPos.X, rightLowerLegPos.Y)
+                skeleton.RightHipToRightKnee.Visible = true
+                
+                if rightFoot then
+                    local rightFootPos = Camera:WorldToViewportPoint(rightFoot.Position)
+                    skeleton.RightKneeToRightFoot.From = Vector2.new(rightLowerLegPos.X, rightLowerLegPos.Y)
+                    skeleton.RightKneeToRightFoot.To = Vector2.new(rightFootPos.X, rightFootPos.Y)
+                    skeleton.RightKneeToRightFoot.Visible = true
+                else
+                    skeleton.RightKneeToRightFoot.Visible = false
+                end
+            else
+                skeleton.RightHipToRightKnee.Visible = false
+                skeleton.RightKneeToRightFoot.Visible = false
+            end
+        else
+            skeleton.HipToRightHip.Visible = false
+            skeleton.RightHipToRightKnee.Visible = false
+            skeleton.RightKneeToRightFoot.Visible = false
+        end
+    else
+        for _, bone in pairs(skeleton) do
+            bone.Visible = false
+        end
+    end
+end
+
+local function getPlayerBoundingBox(character)
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return nil end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return nil end
+    
+    local height = 5
+    local width = 2
+    
+    local top = rootPart.Position + Vector3.new(0, height/2, 0)
+    local bottom = rootPart.Position - Vector3.new(0, height/2, 0)
+    
+    return top, bottom, width, height
+end
+
+local function getHealthColor(health, maxHealth)
+    local percentage = health / maxHealth
+    if percentage > 0.75 then
+        return Color3.new(0, 1, 0)
+    elseif percentage > 0.40 then
+        return Color3.new(1, 0.5, 0)
+    elseif percentage > 0.30 then
+        return Color3.new(1, 0.3, 0)
+    else
+        return Color3.new(1, 0, 0)
+    end
+end
+
+local function isVisible(targetPart)
+    if not WallCheckEnabled then
+        return true
+    end
+    
+    local cameraPosition = Camera.CFrame.Position
+    local targetPosition = targetPart.Position
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, Camera}
+    
+    local raycastResult = workspace:Raycast(cameraPosition, (targetPosition - cameraPosition), raycastParams)
+    
+    if raycastResult then
+        local hitPart = raycastResult.Instance
+        if hitPart and hitPart:IsDescendantOf(targetPart.Parent) then
+            return true
+        else
+            return false
+        end
+    end
+    
+    return true
+end
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+    
+    local esp = {
+        Box = Drawing.new("Square"),
+        Tracer = Drawing.new("Line"),
+        Name = Drawing.new("Text"),
+        HealthBar = Drawing.new("Square"),
+        HealthBarFill = Drawing.new("Square"),
+        HealthBarBackground = Drawing.new("Square"),
+        Distance = Drawing.new("Text")
+    }
+    
+    esp.Box.Visible = false
+    esp.Box.Color = Color3.new(1, 1, 1)
+    esp.Box.Thickness = 2
+    esp.Box.Filled = false
+    
+    esp.Tracer.Visible = false
+    esp.Tracer.Color = Color3.new(1, 1, 1)
+    esp.Tracer.Thickness = 1
+    
+    esp.Name.Visible = false
+    esp.Name.Color = Color3.new(1, 1, 1)
+    esp.Name.Size = 13
+    esp.Name.Center = true
+    esp.Name.Outline = true
+    
+    esp.Distance.Visible = false
+    esp.Distance.Color = Color3.new(1, 1, 1)
+    esp.Distance.Size = 12
+    esp.Distance.Center = true
+    esp.Distance.Outline = true
+    
+    esp.HealthBarBackground.Visible = false
+    esp.HealthBarBackground.Color = Color3.new(0, 0, 0)
+    esp.HealthBarBackground.Thickness = 1
+    esp.HealthBarBackground.Filled = true
+    
+    esp.HealthBar.Visible = false
+    esp.HealthBar.Color = Color3.new(1, 1, 1)
+    esp.HealthBar.Thickness = 1
+    esp.HealthBar.Filled = false
+    
+    esp.HealthBarFill.Visible = false
+    esp.HealthBarFill.Color = Color3.new(0, 1, 0)
+    esp.HealthBarFill.Thickness = 1
+    esp.HealthBarFill.Filled = true
+    
+    ESPDrawings[player] = esp
+    createSkeleton(player)
+end
+
+local function updateChams()
+    if not ChamsEnabled then
+        for _, obj in pairs(ChamFolder:GetChildren()) do
+            obj:Destroy()
+        end
+        return
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            for _, part in pairs(player.Character:GetChildren()) do
+                if part:IsA("BasePart") and not part:FindFirstChild("ChamHighlight") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "ChamHighlight"
+                    highlight.Adornee = part
+                    highlight.FillColor = Color3.new(1, 0, 0)
+                    highlight.OutlineColor = Color3.new(1, 1, 0)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = ChamFolder
+                end
+            end
+        end
+    end
+end
+
+local function updateESP()
+    for player, esp in pairs(ESPDrawings) do
+        if not player or not player.Character or player == LocalPlayer then
+            for _, drawing in pairs(esp) do
+                if drawing.Visible ~= nil then
+                    drawing.Visible = false
+                end
+            end
+            if esp.Skeleton then
+                for _, bone in pairs(esp.Skeleton) do
+                    bone.Visible = false
+                end
+            end
+        else
+            local character = player.Character
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            
+            if not humanoid or humanoid.Health <= 0 then
+                for _, drawing in pairs(esp) do
+                    if drawing.Visible ~= nil then
+                        drawing.Visible = false
+                    end
+                end
+                if esp.Skeleton then
+                    for _, bone in pairs(esp.Skeleton) do
+                        bone.Visible = false
+                    end
+                end
+            else
+                -- Update Skeleton ESP
+                if SkeletonESPEnabled then
+                    updateSkeleton(player)
+                else
+                    if esp.Skeleton then
+                        for _, bone in pairs(esp.Skeleton) do
+                            bone.Visible = false
+                        end
+                    end
+                end
+                
+                local top, bottom, width, height = getPlayerBoundingBox(character)
+                if top and bottom then
+                    local topPos, topOnScreen = Camera:WorldToViewportPoint(top)
+                    local bottomPos, bottomOnScreen = Camera:WorldToViewportPoint(bottom)
+                    
+                    if topOnScreen and bottomOnScreen then
+                        local boxHeight = math.abs(topPos.Y - bottomPos.Y)
+                        local boxWidth = boxHeight / 2
+                        
+                        local boxPos = Vector2.new(topPos.X - boxWidth/2, topPos.Y)
+                        local boxSize = Vector2.new(boxWidth, boxHeight)
+                        
+                        esp.Box.Visible = BoxESPEnabled
+                        if esp.Box.Visible then
+                            esp.Box.Size = boxSize
+                            esp.Box.Position = boxPos
+                        end
+                        
+                        esp.Tracer.Visible = TracerESPEnabled
+                        if esp.Tracer.Visible then
+                            esp.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                            esp.Tracer.To = Vector2.new(topPos.X, topPos.Y)
+                        end
+                        
+                        -- NAME UND DISTANCE ESP UNTER DEM SPIELER (JETZT MIT + STATT -)
+                        esp.Name.Visible = NameESPEnabled
+                        if esp.Name.Visible then
+                            esp.Name.Text = player.Name
+                            esp.Name.Position = Vector2.new(topPos.X, bottomPos.Y + 5) -- UNTER dem Spieler
+                        end
+                        
+                        esp.Distance.Visible = DistanceESPEnabled
+                        if esp.Distance.Visible then
+                            local distance = (top - Camera.CFrame.Position).Magnitude
+                            esp.Distance.Text = tostring(math.floor(distance)) .. "m"
+                            esp.Distance.Position = Vector2.new(topPos.X, bottomPos.Y + 20) -- UNTER dem Spieler
+                        end
+                        
+                        if HealthBarESPEnabled then
+                            local healthPercentage = humanoid.Health / humanoid.MaxHealth
+                            local healthBarWidth = 4
+                            local healthBarHeight = boxHeight
+                            local healthBarX = boxPos.X - 8
+                            local healthBarY = boxPos.Y
+                            
+                            esp.HealthBarBackground.Visible = true
+                            esp.HealthBarBackground.Size = Vector2.new(healthBarWidth, healthBarHeight)
+                            esp.HealthBarBackground.Position = Vector2.new(healthBarX, healthBarY)
+                            esp.HealthBarBackground.Color = Color3.new(0, 0, 0)
+                            
+                            local fillHeight = healthBarHeight * healthPercentage
+                            esp.HealthBarFill.Visible = true
+                            esp.HealthBarFill.Size = Vector2.new(healthBarWidth, fillHeight)
+                            esp.HealthBarFill.Position = Vector2.new(healthBarX, healthBarY + (healthBarHeight - fillHeight))
+                            
+                            local healthColor = getHealthColor(humanoid.Health, humanoid.MaxHealth)
+                            esp.HealthBarFill.Color = healthColor
+                            
+                            esp.HealthBar.Visible = true
+                            esp.HealthBar.Size = Vector2.new(healthBarWidth, healthBarHeight)
+                            esp.HealthBar.Position = Vector2.new(healthBarX, healthBarY)
+                            esp.HealthBar.Color = Color3.new(1, 1, 1)
+                            esp.HealthBar.Filled = false
+                        else
+                            esp.HealthBarBackground.Visible = false
+                            esp.HealthBar.Visible = false
+                            esp.HealthBarFill.Visible = false
+                        end
+                        
+                    else
+                        for _, drawing in pairs(esp) do
+                            if drawing.Visible ~= nil then
+                                drawing.Visible = false
+                            end
+                        end
+                        if esp.Skeleton then
+                            for _, bone in pairs(esp.Skeleton) do
+                                bone.Visible = false
+                            end
+                        end
+                    end
+                else
+                    for _, drawing in pairs(esp) do
+                        if drawing.Visible ~= nil then
+                            drawing.Visible = false
+                        end
+                    end
+                    if esp.Skeleton then
+                        for _, bone in pairs(esp.Skeleton) do
+                            bone.Visible = false
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function getPlayerUnderMouse()
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and isEnemy(player) and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local head = player.Character:FindFirstChild("Head")
+            
+            if humanoid and humanoid.Health > 0 and head then
+                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                
+                if onScreen then
+                    local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(headPos.X, headPos.Y)).Magnitude
+                    
+                    if distance < 30 then
+                        if isVisible(head) then
+                            local hitchanceRoll = math.random(1, 100)
+                            if hitchanceRoll <= TriggerbotHitchance then
+                                return true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return false
+end
+
+local function triggerbot()
+    if not TriggerbotEnabled then return end
+    
+    local currentTime = tick()
+    
+    if currentTime - LastTriggerTime < (TriggerbotDelay / 1000) then
+        return
+    end
+    
+    if getPlayerUnderMouse() then
+        local mousePos = UserInputService:GetMouseLocation()
+        
+        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, true, game, 1)
+        wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
+        
+        print("🔫 TRIGGERBOT AKTIVIERT!")
+        LastTriggerTime = currentTime
+    end
+end
+
+-- AIMBOT FUNKTION MIT TEAMCHECK
+local function findTarget()
+    if not AimbotEnabled then return nil end
+    
+    local bestTarget = nil
+    local bestValue = math.huge
+    local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        -- TEAMCHECK - Nur Feinde als Ziel auswählen
+        if player ~= LocalPlayer and isEnemy(player) and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            
+            if humanoid and humanoid.Health > 0 then
+                local targetPart = nil
+                
+                if TargetMode == "Head" then
+                    targetPart = player.Character:FindFirstChild("Head")
+                elseif TargetMode == "Torso" then
+                    targetPart = player.Character:FindFirstChild("UpperTorso") or player.Character:FindFirstChild("Torso")
+                elseif TargetMode == "Left Arm" then
+                    targetPart = player.Character:FindFirstChild("LeftHand") or player.Character:FindFirstChild("LeftArm")
+                elseif TargetMode == "Right Arm" then
+                    targetPart = player.Character:FindFirstChild("RightHand") or player.Character:FindFirstChild("RightArm")
+                elseif TargetMode == "Left Leg" then
+                    targetPart = player.Character:FindFirstChild("LeftFoot") or player.Character:FindFirstChild("LeftLeg")
+                elseif TargetMode == "Right Leg" then
+                    targetPart = player.Character:FindFirstChild("RightFoot") or player.Character:FindFirstChild("RightLeg")
+                end
+                
+                if targetPart then
+                    local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                    
+                    if onScreen then
+                        local distanceToCrosshair = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
+                        local worldDistance = (targetPart.Position - Camera.CFrame.Position).Magnitude
+                        
+                        local inFOV = distanceToCrosshair <= AimbotFOV
+                        local isTargetVisible = isVisible(targetPart)
+                        
+                        local currentValue = math.huge
+                        
+                        if TargetPriority == "Crosshair" then
+                            if inFOV and isTargetVisible then
+                                currentValue = distanceToCrosshair
+                            end
+                        elseif TargetPriority == "Nearest" then
+                            if isTargetVisible then
+                                currentValue = worldDistance
+                            end
+                        elseif TargetPriority == "Distance" then
+                            if inFOV and isTargetVisible then
+                                currentValue = distanceToCrosshair
+                            end
+                        end
+                        
+                        if currentValue < bestValue then
+                            bestValue = currentValue
+                            bestTarget = targetPart
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return bestTarget
+end
+
+local function aimAtTarget(target)
+    if not target then return end
+    
+    if AimbotMethod == "Mouse" then
+        local screenPos = Camera:WorldToViewportPoint(target.Position)
+        local mouse = UserInputService:GetMouseLocation()
+        local delta = Vector2.new(screenPos.X - mouse.X, screenPos.Y - mouse.Y)
+        local smoothFactor = AimbotSmoothness / 10
+        
+        if mousemoverel then
+            mousemoverel(delta.X * smoothFactor, delta.Y * smoothFactor)
+        end
+    elseif AimbotMethod == "Camera" then
+        local currentCFrame = Camera.CFrame
+        local targetCFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+        local smoothFactor = AimbotSmoothness / 30
+        
+        Camera.CFrame = currentCFrame:Lerp(targetCFrame, smoothFactor)
+    end
+end
+
+local function updateFOVCircle()
+    FOVCircle.Visible = FOVCircleEnabled
+    if FOVCircleEnabled then
+        FOVCircle.Radius = AimbotFOV
+        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    end
+end
+
+local function updateTargetIndicator()
+    TargetIndicator.Visible = ShowTargetEnabled
+    if ShowTargetEnabled then
+        local target = findTarget()
+        if target then
+            local screenPos = Camera:WorldToViewportPoint(target.Position)
+            TargetIndicator.Position = Vector2.new(screenPos.X - 5, screenPos.Y - 5)
+        else
+            TargetIndicator.Visible = false
+        end
+    end
+end
+
+-- ====================
+-- INITIALISIERUNG
+-- ====================
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        createESP(player)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    createESP(player)
+end)
+
+-- ====================
+-- HAUPTSCHLEIFE
+-- ====================
+RunService.Heartbeat:Connect(function()
+    if AimbotEnabled then
+        local target = findTarget()
+        aimAtTarget(target)
+    end
+    
+    triggerbot()
+    updateESP()
+    updateChams()
+    updateFOVCircle()
+    updateTargetIndicator()
+end)
+
+print("✅ SEROTONIN GUI - MIT TEAMCHECK & PERFEKTER SLIDER POSITION!")
