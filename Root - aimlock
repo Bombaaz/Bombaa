@@ -32,7 +32,7 @@ TitleBar.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Root - .gg/habnochkeindiscord"
+Title.Text = "Serotonin - MIT TEAMCHECK"
 Title.TextColor3 = Color3.fromRGB(248, 249, 250)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 14
@@ -233,7 +233,7 @@ end
 function createSlider(parent, text, min, max, default, callback)
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Size = UDim2.new(1, -20, 0, 40)
-    sliderFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 45)
+    sliderFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 30)
     sliderFrame.BackgroundTransparency = 1
     sliderFrame.Parent = parent
     
@@ -431,6 +431,7 @@ local AimbotSmoothness = 10
 local AimbotMethod = "Mouse"
 local TargetMode = "Head"
 local FOVCircleEnabled = false
+local FillCircleEnabled = false
 local ShowTargetEnabled = false
 local TargetPriority = "Crosshair"
 local WallCheckEnabled = true
@@ -449,6 +450,7 @@ local SkeletonESPEnabled = false
 
 local ESPDrawings = {}
 local FOVCircle = Drawing.new("Circle")
+local FillCircle = Drawing.new("Circle")
 local TargetIndicator = Drawing.new("Square")
 local LastTriggerTime = 0
 local VirtualInputManager = game:GetService("VirtualInputManager")
@@ -503,11 +505,17 @@ createSlider(MainAimbotSection, "Aimbot FOV", 0, 500, 100, function(value)
 end)
 
 -- Extra Features Section - Position angepasst
-local ExtraAimbotSection = createSection(AimbotFrame, "Extra Features", 10, 330, 360, 120)
+local ExtraAimbotSection = createSection(AimbotFrame, "Extra Features", 10, 330, 360, 150)
 
 createToggle(ExtraAimbotSection, "FOV Circle", false, "", function(state)
     FOVCircleEnabled = state
     print("FOV Circle:", state)
+end)
+
+-- FILL CIRCLE TOGGLE - NEU HINZUGEFÜGT
+createToggle(ExtraAimbotSection, "Fill Circle", false, "", function(state)
+    FillCircleEnabled = state
+    print("Fill Circle:", state)
 end)
 
 createToggle(ExtraAimbotSection, "Show Target", false, "", function(state)
@@ -521,7 +529,7 @@ createToggle(ExtraAimbotSection, "Wall Check", true, "", function(state)
 end)
 
 -- Triggerbot Section - Position angepasst
-local TriggerbotSection = createSection(AimbotFrame, "Triggerbot", 10, 460, 360, 150)
+local TriggerbotSection = createSection(AimbotFrame, "Triggerbot", 10, 490, 360, 150)
 
 createToggle(TriggerbotSection, "Triggerbot", false, TriggerbotHotkey, function(state)
     TriggerbotEnabled = state
@@ -625,6 +633,14 @@ FOVCircle.Color = Color3.new(1, 1, 1)
 FOVCircle.Thickness = 2
 FOVCircle.NumSides = 100
 FOVCircle.Filled = false
+
+-- FILL CIRCLE KONFIGURATION - TRANSPARENT AUSGEFÜLLT
+FillCircle.Visible = false
+FillCircle.Color = Color3.new(1, 1, 1)
+FillCircle.Thickness = 0
+FillCircle.NumSides = 100
+FillCircle.Filled = true
+FillCircle.Transparency = 0.7  -- TRANSPARENT DAMIT MAN DURCHGUCKEN KANN
 
 -- TARGET INDICATOR FARBE VON GRÜN AUF ROT GEÄNDERT
 TargetIndicator.Visible = false
@@ -1313,6 +1329,13 @@ local function updateFOVCircle()
         FOVCircle.Radius = AimbotFOV
         FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     end
+    
+    -- FILL CIRCLE UPDATE
+    FillCircle.Visible = FillCircleEnabled
+    if FillCircleEnabled then
+        FillCircle.Radius = AimbotFOV
+        FillCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    end
 end
 
 local function updateTargetIndicator()
@@ -1357,4 +1380,4 @@ RunService.Heartbeat:Connect(function()
     updateTargetIndicator()
 end)
 
-print("✅ SEROTONIN GUI - MIT TEAMCHECK & PERFEKTER SLIDER POSITION!")
+print("✅ SEROTONIN GUI - MIT TEAMCHECK, PERFEKTER SLIDER POSITION & FILL CIRCLE!")
