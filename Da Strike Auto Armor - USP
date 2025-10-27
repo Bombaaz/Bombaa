@@ -1,0 +1,555 @@
+-- EXECUTOR SUPPORT INFO (ENGLISH VERSION) - FIXED RESPAWN BUG
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Support Info GUI (appears first in center)
+local supportGui = Instance.new("ScreenGui")
+supportGui.Name = "ExecutorSupportInfo"
+supportGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local supportFrame = Instance.new("Frame")
+supportFrame.Size = UDim2.new(0, 500, 0, 320)
+supportFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+supportFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+supportFrame.BorderSizePixel = 0
+supportFrame.Parent = supportGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = supportFrame
+
+-- Title
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 50)
+titleLabel.Position = UDim2.new(0, 0, 0, 0)
+titleLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+titleLabel.Text = "EXECUTOR SUPPORT INFO"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Parent = supportFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleLabel
+
+-- Supported Executors (Green)
+local supportedFrame = Instance.new("Frame")
+supportedFrame.Size = UDim2.new(0.33, -10, 0, 200)
+supportedFrame.Position = UDim2.new(0, 10, 0, 60)
+supportedFrame.BackgroundColor3 = Color3.fromRGB(30, 50, 30)
+supportedFrame.BorderSizePixel = 0
+supportedFrame.Parent = supportFrame
+
+local supportedCorner = Instance.new("UICorner")
+supportedCorner.CornerRadius = UDim.new(0, 8)
+supportedCorner.Parent = supportedFrame
+
+local supportedTitle = Instance.new("TextLabel")
+supportedTitle.Size = UDim2.new(1, 0, 0, 30)
+supportedTitle.Position = UDim2.new(0, 0, 0, 0)
+supportedTitle.BackgroundColor3 = Color3.fromRGB(40, 70, 40)
+supportedTitle.Text = "✅ SUPPORTED"
+supportedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+supportedTitle.TextSize = 14
+supportedTitle.Font = Enum.Font.GothamBold
+supportedTitle.Parent = supportedFrame
+
+local supportedList = Instance.new("TextLabel")
+supportedList.Size = UDim2.new(1, -10, 1, -40)
+supportedList.Position = UDim2.new(0, 5, 0, 35)
+supportedList.BackgroundTransparency = 1
+supportedList.Text = "• Solara\n• Swift\n• Bunni\n• Fluxus\n• Krnl"
+supportedList.TextColor3 = Color3.fromRGB(200, 255, 200)
+supportedList.TextSize = 12
+supportedList.Font = Enum.Font.Gotham
+supportedList.TextXAlignment = Enum.TextXAlignment.Left
+supportedList.TextYAlignment = Enum.TextYAlignment.Top
+supportedList.Parent = supportedFrame
+
+-- Issues Executors (Yellow)
+local issuesFrame = Instance.new("Frame")
+issuesFrame.Size = UDim2.new(0.33, -10, 0, 200)
+issuesFrame.Position = UDim2.new(0.33, 5, 0, 60)
+issuesFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 30)
+issuesFrame.BorderSizePixel = 0
+issuesFrame.Parent = supportFrame
+
+local issuesCorner = Instance.new("UICorner")
+issuesCorner.CornerRadius = UDim.new(0, 8)
+issuesCorner.Parent = issuesFrame
+
+local issuesTitle = Instance.new("TextLabel")
+issuesTitle.Size = UDim2.new(1, 0, 0, 30)
+issuesTitle.Position = UDim2.new(0, 0, 0, 0)
+issuesTitle.BackgroundColor3 = Color3.fromRGB(70, 70, 40)
+issuesTitle.Text = "⚠️ ISSUES"
+issuesTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+issuesTitle.TextSize = 14
+issuesTitle.Font = Enum.Font.GothamBold
+issuesTitle.Parent = issuesFrame
+
+local issuesList = Instance.new("TextLabel")
+issuesList.Size = UDim2.new(1, -10, 1, -40)
+issuesList.Position = UDim2.new(0, 5, 0, 35)
+issuesList.BackgroundTransparency = 1
+issuesList.Text = "• JJsploit\n• Delta\n• Ronix"
+issuesList.TextColor3 = Color3.fromRGB(255, 255, 200)
+issuesList.TextSize = 12
+issuesList.Font = Enum.Font.Gotham
+issuesList.TextXAlignment = Enum.TextXAlignment.Left
+issuesList.TextYAlignment = Enum.TextYAlignment.Top
+issuesList.Parent = issuesFrame
+
+-- Not Supported Executors (Red)
+local notSupportedFrame = Instance.new("Frame")
+notSupportedFrame.Size = UDim2.new(0.33, -10, 0, 200)
+notSupportedFrame.Position = UDim2.new(0.66, 5, 0, 60)
+notSupportedFrame.BackgroundColor3 = Color3.fromRGB(50, 30, 30)
+notSupportedFrame.BorderSizePixel = 0
+notSupportedFrame.Parent = supportFrame
+
+local notSupportedCorner = Instance.new("UICorner")
+notSupportedCorner.CornerRadius = UDim.new(0, 8)
+notSupportedCorner.Parent = notSupportedFrame
+
+local notSupportedTitle = Instance.new("TextLabel")
+notSupportedTitle.Size = UDim2.new(1, 0, 0, 30)
+notSupportedTitle.Position = UDim2.new(0, 0, 0, 0)
+notSupportedTitle.BackgroundColor3 = Color3.fromRGB(70, 40, 40)
+notSupportedTitle.Text = "❌ NOT SUPPORTED"
+notSupportedTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+notSupportedTitle.TextSize = 14
+notSupportedTitle.Font = Enum.Font.GothamBold
+notSupportedTitle.Parent = notSupportedFrame
+
+local notSupportedList = Instance.new("TextLabel")
+notSupportedList.Size = UDim2.new(1, -10, 1, -40)
+notSupportedList.Position = UDim2.new(0, 5, 0, 35)
+notSupportedList.BackgroundTransparency = 1
+notSupportedList.Text = "• Xeno"
+notSupportedList.TextColor3 = Color3.fromRGB(255, 200, 200)
+notSupportedList.TextSize = 12
+notSupportedList.Font = Enum.Font.Gotham
+notSupportedList.TextXAlignment = Enum.TextXAlignment.Left
+notSupportedList.TextYAlignment = Enum.TextYAlignment.Top
+notSupportedList.Parent = notSupportedFrame
+
+-- Continue Button
+local continueButton = Instance.new("TextButton")
+continueButton.Size = UDim2.new(0, 200, 0, 40)
+continueButton.Position = UDim2.new(0.5, -100, 1, -50)
+continueButton.BackgroundColor3 = Color3.fromRGB(65, 105, 225)
+continueButton.Text = "CONTINUE"
+continueButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+continueButton.TextSize = 14
+continueButton.Font = Enum.Font.GothamBold
+continueButton.Parent = supportFrame
+
+local continueCorner = Instance.new("UICorner")
+continueCorner.CornerRadius = UDim.new(0, 8)
+continueCorner.Parent = continueButton
+
+-- Main GUI Function (shown after Continue)
+local function createMainGUI()
+    -- Support GUI hide
+    supportGui.Enabled = false
+    
+    -- Main GUI create
+    local mainGui = Instance.new("ScreenGui")
+    mainGui.Name = "AutoArmorGUI"
+    mainGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 350, 0, 220)
+    mainFrame.Position = UDim2.new(0, 10, 0, 10)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = mainGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 30)
+    titleBar.Position = UDim2.new(0, 0, 0, 0)
+    titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Size = UDim2.new(1, -40, 1, 0)
+    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Text = "AUTO BUY - V & B"
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 14
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = titleBar
+    
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 20, 0, 20)
+    closeButton.Position = UDim2.new(1, -25, 0, 5)
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+    closeButton.Text = "X"
+    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeButton.TextSize = 12
+    closeButton.Font = Enum.Font.GothamBold
+    closeButton.Parent = titleBar
+    
+    -- Status
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, -20, 0, 40)
+    statusLabel.Position = UDim2.new(0, 10, 0, 35)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Status: Ready\nV - Armor | B - USP"
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.TextSize = 12
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextWrapped = true
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = mainFrame
+    
+    -- Buttons Container
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Size = UDim2.new(1, -20, 0, 80)
+    buttonContainer.Position = UDim2.new(0, 10, 0, 80)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = mainFrame
+    
+    local buttonLayout = Instance.new("UIGridLayout")
+    buttonLayout.CellSize = UDim2.new(0.5, -5, 0, 35)
+    buttonLayout.CellPadding = UDim2.new(0, 5, 0, 5)
+    buttonLayout.StartCorner = Enum.StartCorner.TopLeft
+    buttonLayout.Parent = buttonContainer
+    
+    -- High-Medium Armor Button
+    local highMediumButton = Instance.new("TextButton")
+    highMediumButton.BackgroundColor3 = Color3.fromRGB(65, 105, 225)
+    highMediumButton.Text = "[High-Medium Armor]\nV Key"
+    highMediumButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    highMediumButton.TextSize = 11
+    highMediumButton.Font = Enum.Font.GothamBold
+    highMediumButton.Parent = buttonContainer
+    
+    -- USP Button
+    local uspButton = Instance.new("TextButton")
+    uspButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
+    uspButton.Text = "[USP]\nB Key"
+    uspButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    uspButton.TextSize = 11
+    uspButton.Font = Enum.Font.GothamBold
+    uspButton.Parent = buttonContainer
+    
+    -- Auto-Buy Delay Section
+    local delayContainer = Instance.new("Frame")
+    delayContainer.Size = UDim2.new(1, -20, 0, 50)
+    delayContainer.Position = UDim2.new(0, 10, 0, 165)
+    delayContainer.BackgroundTransparency = 1
+    delayContainer.Parent = mainFrame
+    
+    local delayLabel = Instance.new("TextLabel")
+    delayLabel.Size = UDim2.new(0, 120, 0, 20)
+    delayLabel.Position = UDim2.new(0, 0, 0, 0)
+    delayLabel.BackgroundTransparency = 1
+    delayLabel.Text = "Auto-Buy Delay:"
+    delayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    delayLabel.TextSize = 12
+    delayLabel.Font = Enum.Font.Gotham
+    delayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    delayLabel.Parent = delayContainer
+    
+    local delayBox = Instance.new("TextBox")
+    delayBox.Size = UDim2.new(0, 50, 0, 25)
+    delayBox.Position = UDim2.new(0, 125, 0, 0)
+    delayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    delayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    delayBox.Text = "5"
+    delayBox.TextSize = 12
+    delayBox.Font = Enum.Font.Gotham
+    delayBox.PlaceholderText = "Seconds"
+    delayBox.Parent = delayContainer
+    
+    local secondsLabel = Instance.new("TextLabel")
+    secondsLabel.Size = UDim2.new(0, 60, 0, 20)
+    secondsLabel.Position = UDim2.new(0, 180, 0, 0)
+    secondsLabel.BackgroundTransparency = 1
+    secondsLabel.Text = "Seconds"
+    secondsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    secondsLabel.TextSize = 12
+    secondsLabel.Font = Enum.Font.Gotham
+    secondsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    secondsLabel.Parent = delayContainer
+    
+    local autoBuyButton = Instance.new("TextButton")
+    autoBuyButton.Size = UDim2.new(0, 120, 0, 25)
+    autoBuyButton.Position = UDim2.new(0, 0, 0, 25)
+    autoBuyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+    autoBuyButton.Text = "AUTO BUY START"
+    autoBuyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    autoBuyButton.TextSize = 11
+    autoBuyButton.Font = Enum.Font.GothamBold
+    autoBuyButton.Parent = delayContainer
+
+    -- Warning Label for Auto Buy
+    local warningLabel = Instance.new("TextLabel")
+    warningLabel.Size = UDim2.new(0, 150, 0, 25)
+    warningLabel.Position = UDim2.new(0, 125, 0, 25)
+    warningLabel.BackgroundTransparency = 1
+    warningLabel.Text = "You maybe will have Issues"
+    warningLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+    warningLabel.TextSize = 10
+    warningLabel.Font = Enum.Font.Gotham
+    warningLabel.TextXAlignment = Enum.TextXAlignment.Left
+    warningLabel.Parent = delayContainer
+    
+    -- Corners for all buttons and boxes
+    local function addCorners()
+        local items = {highMediumButton, uspButton, delayBox, autoBuyButton, closeButton}
+        
+        for _, item in pairs(items) do
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 6)
+            corner.Parent = item
+        end
+    end
+    
+    addCorners()
+    
+    -- Variables
+    local isAutoBuying = false
+    local autoBuyConnection = nil
+    
+    -- Functions
+    local function findBuyPad(itemName)
+        local mapFolder = workspace:FindFirstChild("MAP")
+        if not mapFolder then return nil end
+        
+        local buyPadsFolder = mapFolder:FindFirstChild("BuyPads")
+        if not buyPadsFolder then return nil end
+        
+        return buyPadsFolder:FindFirstChild(itemName)
+    end
+    
+    local function buyItem(itemName, button)
+        local buyPad = findBuyPad(itemName)
+        if not buyPad then
+            statusLabel.Text = "Status: " .. itemName .. " not found!"
+            return false
+        end
+        
+        local clickDetector = buyPad:FindFirstChildOfClass("ClickDetector")
+        if not clickDetector then
+            statusLabel.Text = "Status: No ClickDetector at " .. itemName
+            return false
+        end
+        
+        -- Save original button color
+        local originalColor = button.BackgroundColor3
+        
+        -- Change button color during purchase
+        button.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+        statusLabel.Text = "Status: Buying " .. itemName .. "..."
+        
+        -- Execute click
+        local success = pcall(function()
+            fireclickdetector(clickDetector)
+            return true
+        end)
+        
+        if success then
+            statusLabel.Text = "Status: " .. itemName .. " purchased!"
+            button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            
+            -- Success sound
+            pcall(function()
+                local sound = Instance.new("Sound")
+                sound.SoundId = "rbxassetid://4590662766"
+                sound.Parent = workspace
+                sound:Play()
+                game:GetService("Debris"):AddItem(sound, 2)
+            end)
+        else
+            statusLabel.Text = "Status: Purchase failed!"
+            button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        end
+        
+        -- Reset button color after 1 second
+        wait(1)
+        button.BackgroundColor3 = originalColor
+        
+        if not isAutoBuying then
+            statusLabel.Text = "Status: Ready\nV - Armor | B - USP"
+        end
+        
+        return success
+    end
+    
+    local function startAutoBuy()
+        if isAutoBuying then return end
+        
+        local delayText = delayBox.Text
+        local delaySeconds = tonumber(delayText)
+        
+        if not delaySeconds or delaySeconds < 1 then
+            statusLabel.Text = "Status: Invalid time! (min. 1s)"
+            delayBox.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            wait(1)
+            delayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            return
+        end
+        
+        isAutoBuying = true
+        autoBuyButton.BackgroundColor3 = Color3.fromRGB(220, 20, 60)
+        autoBuyButton.Text = "AUTO BUY STOP"
+        statusLabel.Text = "Status: Auto-Buy active\nEvery " .. delaySeconds .. "s Armor purchase"
+        
+        -- Auto-Buy Loop
+        autoBuyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            if not isAutoBuying then
+                autoBuyConnection:Disconnect()
+                return
+            end
+            
+            buyItem("[High-Medium Armor]", highMediumButton)
+            wait(delaySeconds)
+        end)
+    end
+    
+    local function stopAutoBuy()
+        if not isAutoBuying then return end
+        
+        isAutoBuying = false
+        if autoBuyConnection then
+            autoBuyConnection:Disconnect()
+            autoBuyConnection = nil
+        end
+        
+        autoBuyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+        autoBuyButton.Text = "AUTO BUY START"
+        statusLabel.Text = "Status: Auto-Buy stopped\nV - Armor | B - USP"
+    end
+    
+    -- Button Events
+    highMediumButton.MouseButton1Click:Connect(function()
+        if not isAutoBuying then
+            buyItem("[High-Medium Armor]", highMediumButton)
+        end
+    end)
+    
+    uspButton.MouseButton1Click:Connect(function()
+        if not isAutoBuying then
+            buyItem("[USP]", uspButton)
+        end
+    end)
+    
+    autoBuyButton.MouseButton1Click:Connect(function()
+        if isAutoBuying then
+            stopAutoBuy()
+        else
+            startAutoBuy()
+        end
+    end)
+    
+    closeButton.MouseButton1Click:Connect(function()
+        stopAutoBuy()
+        mainGui:Destroy()
+    end)
+    
+    -- V & B Key Hotkeys
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        
+        -- V Key - High-Medium Armor
+        if input.KeyCode == Enum.KeyCode.V then
+            if not isAutoBuying then
+                buyItem("[High-Medium Armor]", highMediumButton)
+            end
+        
+        -- B Key - USP
+        elseif input.KeyCode == Enum.KeyCode.B then
+            if not isAutoBuying then
+                buyItem("[USP]", uspButton)
+            end
+        end
+    end)
+    
+    -- Auto-Check which items are available
+    spawn(function()
+        wait(1)
+        
+        -- Check High-Medium Armor
+        local armorPad = findBuyPad("[High-Medium Armor]")
+        if armorPad then
+            statusLabel.Text = "Status: Ready\nV - Armor ✓ | B - USP"
+        else
+            highMediumButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            highMediumButton.Text = "[High-Medium Armor]\nNOT FOUND"
+            statusLabel.Text = "Status: Armor not found!"
+        end
+        
+        -- Check USP
+        local uspPad = findBuyPad("[USP]")
+        if not uspPad then
+            uspButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            uspButton.Text = "[USP]\nNOT FOUND"
+            if armorPad then
+                statusLabel.Text = "Status: USP not found!\nV - Armor ✓"
+            else
+                statusLabel.Text = "Status: Both items not found!"
+            end
+        end
+        
+        if armorPad and uspPad then
+            statusLabel.Text = "Status: Ready\nV - Armor ✓ | B - USP ✓"
+        end
+    end)
+    
+    -- Drag Function
+    local dragging = false
+    local dragStart, startPos
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X, 
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    -- 🚀 FIX: Main GUI bleibt sichtbar beim Sterben/Respawnen
+    -- KEIN CharacterRemoving Event mehr der die GUI ausblendet!
+    
+    print("🎯 AUTO ARMOR & USP GUI LOADED!")
+    print("🔧 FIX: GUI stays visible when you die/respawn!")
+end
+
+-- Continue Button Event
+continueButton.MouseButton1Click:Connect(function()
+    createMainGUI()
+end)
+
+print("🔧 EXECUTOR SUPPORT INFO LOADED!")
+print("📝 Click 'CONTINUE' to go to main GUI!")
