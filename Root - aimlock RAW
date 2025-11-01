@@ -1,10 +1,10 @@
--- Serotonin GUI - MIT TEAMCHECK
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
+local TweenService = game:GetService("TweenService")
 
 -- ====================
 -- GUI SETUP
@@ -32,7 +32,7 @@ TitleBar.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, 0, 1, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "Serotonin - MIT TEAMCHECK"
+Title.Text = "Root - .gg/5yhJG635bE"
 Title.TextColor3 = Color3.fromRGB(248, 249, 250)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 14
@@ -61,7 +61,7 @@ TabContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = MainFrame
 
-local Tabs = {"Aimbot", "Visual"}
+local Tabs = {"Aimbot", "Visual", "Misc"} -- NEUER TAB HINZUGEFÜGT
 local TabButtons = {}
 local TabFrames = {}
 
@@ -447,6 +447,12 @@ local HealthBarESPEnabled = false
 local DistanceESPEnabled = false
 local ChamsEnabled = false
 local SkeletonESPEnabled = false
+local ESPTeamCheckEnabled = false -- NEUE VARIABLE FÜR ESP TEAMCHECK
+
+-- MISC VARIABLEN
+local FPSBoostEnabled = false
+local PotatoModeEnabled = false
+local OriginalSettings = {}
 
 local ESPDrawings = {}
 local FOVCircle = Drawing.new("Circle")
@@ -547,10 +553,10 @@ createSlider(TriggerbotSection, "Hitchance", 0, 100, 100, function(value)
 end)
 
 -- ====================
--- VISUAL TAB - MIT PERFEKTEN SKELETTEN
+-- VISUAL TAB - MIT PERFEKTEN SKELETTEN UND ESP TEAMCHECK
 -- ====================
 local VisualFrame = TabFrames["Visual"]
-VisualFrame.CanvasSize = UDim2.new(0, 0, 0, 500)
+VisualFrame.CanvasSize = UDim2.new(0, 0, 0, 550) -- Höhe angepasst für neuen Button
 
 -- Player ESP Section - MIT CHAMS UND SKELETON
 local PlayerESPSection = createSection(VisualFrame, "Player ESP", 10, 10, 360, 280)
@@ -625,6 +631,196 @@ createToggle(EffectsSection, "No Shadows", false, "", function(state)
     print("No Shadows:", state)
 end)
 
+-- ESP TEAMCHECK SECTION - GANZ UNTEN IM VISUAL TAB
+local ESPTeamCheckSection = createSection(VisualFrame, "ESP Team Check", 10, 430, 360, 80)
+
+-- ESP TEAMCHECK BUTTON - NUR BEI GEGNERN ESP
+createToggle(ESPTeamCheckSection, "ESP Team Check", false, "", function(state)
+    ESPTeamCheckEnabled = state
+    print("ESP Team Check:", state)
+    if state then
+        print("ESP FUNKTIONIERT NUR BEI GEGNERN!")
+    else
+        print("ESP FUNKTIONIERT BEI ALLEN SPIELERN!")
+    end
+end)
+
+-- ====================
+-- MISC TAB - NUR EIN TAB MIT FPS BOOST UND POTATO MODE
+-- ====================
+local MiscFrame = TabFrames["Misc"]
+MiscFrame.CanvasSize = UDim2.new(0, 0, 0, 150)
+
+-- Performance Section - EINZIGER TAB IM MISC TAB
+local PerformanceSection = createSection(MiscFrame, "Performance", 10, 10, 360, 130)
+
+createToggle(PerformanceSection, "FPS Boost", false, "", function(state)
+    if state then
+        if FPSBoostEnabled then
+            print("FPS Boost already active!")
+            return
+        end
+        
+        FPSBoostEnabled = true
+        print("FPS BOOST ACTIVATING...")
+        
+        -- Save original settings
+        OriginalSettings.GlobalShadows = Lighting.GlobalShadows
+        OriginalSettings.ShadowSoftness = Lighting.ShadowSoftness
+        OriginalSettings.Brightness = Lighting.Brightness
+        OriginalSettings.FogEnd = Lighting.FogEnd
+        OriginalSettings.GeographicLatitude = Lighting.GeographicLatitude
+        OriginalSettings.OutdoorAmbient = Lighting.OutdoorAmbient
+        OriginalSettings.Ambient = Lighting.Ambient
+        
+        -- Optimize lighting for maximum FPS
+        Lighting.GlobalShadows = false
+        Lighting.ShadowSoftness = 0
+        Lighting.Brightness = 2
+        Lighting.FogEnd = 100000
+        Lighting.GeographicLatitude = 0
+        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+        Lighting.Ambient = Color3.new(1, 1, 1)
+        
+        -- Disable particle effects
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                obj.Enabled = false
+            end
+        end
+        
+        -- Reduce texture quality
+        settings().Rendering.QualityLevel = 1
+        
+        print("FPS BOOST ACTIVATED!")
+        print("Shadows: DISABLED")
+        print("Particles: DISABLED") 
+        print("Texture Quality: REDUCED")
+    else
+        if not FPSBoostEnabled then
+            print("FPS Boost is not active!")
+            return
+        end
+        
+        FPSBoostEnabled = false
+        print("RESETTING FPS BOOST...")
+        
+        -- Restore original settings
+        if OriginalSettings.GlobalShadows ~= nil then
+            Lighting.GlobalShadows = OriginalSettings.GlobalShadows
+            Lighting.ShadowSoftness = OriginalSettings.ShadowSoftness
+            Lighting.Brightness = OriginalSettings.Brightness
+            Lighting.FogEnd = OriginalSettings.FogEnd
+            Lighting.GeographicLatitude = OriginalSettings.GeographicLatitude
+            Lighting.OutdoorAmbient = OriginalSettings.OutdoorAmbient
+            Lighting.Ambient = OriginalSettings.Ambient
+        end
+        
+        -- Enable particle effects again
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                obj.Enabled = true
+            end
+        end
+        
+        -- Restore texture quality
+        settings().Rendering.QualityLevel = 10
+        
+        print("FPS BOOST RESET!")
+    end
+end)
+
+createToggle(PerformanceSection, "Potato Mode", false, "", function(state)
+    if state then
+        if PotatoModeEnabled then
+            print("Potato Mode already active!")
+            return
+        end
+        
+        PotatoModeEnabled = true
+        print("POTATO MODE ACTIVATING...")
+        
+        -- Save original materials and textures
+        OriginalSettings.Materials = {}
+        OriginalSettings.Textures = {}
+        
+        local objectsProcessed = 0
+        
+        -- Change all materials to Plastic and remove textures
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("UnionOperation") then
+                -- Save original values
+                OriginalSettings.Materials[obj] = obj.Material
+                if obj:IsA("Part") then
+                    OriginalSettings.Textures[obj] = {
+                        BrickColor = obj.BrickColor,
+                        Color = obj.Color
+                    }
+                end
+                
+                -- Set to Plastic material
+                obj.Material = Enum.Material.Plastic
+                
+                -- Remove textures and set simple color
+                if obj:IsA("Part") then
+                    obj.BrickColor = BrickColor.new("Medium stone grey")
+                    obj.Color = Color3.new(0.8, 0.8, 0.8)
+                end
+                
+                -- Remove decals/textures
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("Decal") or child:IsA("Texture") then
+                        child:Destroy()
+                    end
+                end
+                
+                objectsProcessed += 1
+            end
+        end
+        
+        print("POTATO MODE ACTIVATED!")
+        print("Objects processed: " .. objectsProcessed)
+        print("All materials: PLASTIC")
+        print("All textures: REMOVED")
+    else
+        if not PotatoModeEnabled then
+            print("Potato Mode is not active!")
+            return
+        end
+        
+        PotatoModeEnabled = false
+        print("RESETTING POTATO MODE...")
+        
+        local objectsRestored = 0
+        
+        -- Restore original materials and textures
+        for obj, originalMaterial in pairs(OriginalSettings.Materials) do
+            if obj and obj.Parent then
+                obj.Material = originalMaterial
+                objectsRestored += 1
+            end
+        end
+        
+        for obj, originalData in pairs(OriginalSettings.Textures) do
+            if obj and obj.Parent then
+                if originalData.BrickColor then
+                    obj.BrickColor = originalData.BrickColor
+                end
+                if originalData.Color then
+                    obj.Color = originalData.Color
+                end
+            end
+        end
+        
+        -- Clear saved settings
+        OriginalSettings.Materials = {}
+        OriginalSettings.Textures = {}
+        
+        print("POTATO MODE RESET!")
+        print("Objects restored: " .. objectsRestored)
+    end
+end)
+
 -- ====================
 -- ESP & AIMBOT SYSTEM
 -- ====================
@@ -649,7 +845,7 @@ TargetIndicator.Thickness = 2
 TargetIndicator.Filled = false
 TargetIndicator.Size = Vector2.new(10, 10)
 
--- TEAMCHECK FUNKTION
+-- TEAMCHECK FUNKTION FÜR AIMBOT
 local function isEnemy(player)
     if not TeamCheckEnabled then
         return true -- Wenn TeamCheck aus ist, sind alle Feinde
@@ -665,6 +861,29 @@ local function isEnemy(player)
     end
     
     -- Wenn im selben Team, dann kein Feind
+    if localPlayerTeam == targetPlayerTeam then
+        return false
+    end
+    
+    return true
+end
+
+-- ESP TEAMCHECK FUNKTION - NUR BEI GEGNERN ESP ANZEIGEN
+local function isESPEnemy(player)
+    if not ESPTeamCheckEnabled then
+        return true -- Wenn ESP TeamCheck aus ist, ESP bei allen Spielern anzeigen
+    end
+    
+    -- Überprüfe ob der Spieler im selben Team ist
+    local localPlayerTeam = LocalPlayer.Team
+    local targetPlayerTeam = player.Team
+    
+    -- Wenn keine Teams vorhanden sind, ESP bei allen anzeigen
+    if not localPlayerTeam or not targetPlayerTeam then
+        return true
+    end
+    
+    -- Wenn im selben Team, dann kein ESP anzeigen
     if localPlayerTeam == targetPlayerTeam then
         return false
     end
@@ -713,6 +932,14 @@ end
 local function updateSkeleton(player)
     local skeleton = ESPDrawings[player].Skeleton
     if not skeleton or not SkeletonESPEnabled then return end
+    
+    -- ESP TEAMCHECK FÜR SKELETON
+    if not isESPEnemy(player) then
+        for _, bone in pairs(skeleton) do
+            bone.Visible = false
+        end
+        return
+    end
     
     local character = player.Character
     if not character then return end
@@ -1028,16 +1255,25 @@ local function updateChams()
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            for _, part in pairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") and not part:FindFirstChild("ChamHighlight") then
-                    local highlight = Instance.new("Highlight")
-                    highlight.Name = "ChamHighlight"
-                    highlight.Adornee = part
-                    highlight.FillColor = Color3.new(1, 0, 0)
-                    highlight.OutlineColor = Color3.new(1, 1, 0)
-                    highlight.FillTransparency = 0.5
-                    highlight.OutlineTransparency = 0
-                    highlight.Parent = ChamFolder
+            -- ESP TEAMCHECK FÜR CHAMS
+            if not isESPEnemy(player) then
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and part:FindFirstChild("ChamHighlight") then
+                        part:FindFirstChild("ChamHighlight"):Destroy()
+                    end
+                end
+            else
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and not part:FindFirstChild("ChamHighlight") then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "ChamHighlight"
+                        highlight.Adornee = part
+                        highlight.FillColor = Color3.new(1, 0, 0)
+                        highlight.OutlineColor = Color3.new(1, 1, 0)
+                        highlight.FillTransparency = 0.5
+                        highlight.OutlineTransparency = 0
+                        highlight.Parent = ChamFolder
+                    end
                 end
             end
         end
@@ -1073,8 +1309,11 @@ local function updateESP()
                     end
                 end
             else
+                -- ESP TEAMCHECK - Nur bei Gegnern ESP anzeigen
+                local showESP = isESPEnemy(player)
+                
                 -- Update Skeleton ESP
-                if SkeletonESPEnabled then
+                if SkeletonESPEnabled and showESP then
                     updateSkeleton(player)
                 else
                     if esp.Skeleton then
@@ -1096,33 +1335,33 @@ local function updateESP()
                         local boxPos = Vector2.new(topPos.X - boxWidth/2, topPos.Y)
                         local boxSize = Vector2.new(boxWidth, boxHeight)
                         
-                        esp.Box.Visible = BoxESPEnabled
+                        esp.Box.Visible = BoxESPEnabled and showESP
                         if esp.Box.Visible then
                             esp.Box.Size = boxSize
                             esp.Box.Position = boxPos
                         end
                         
-                        esp.Tracer.Visible = TracerESPEnabled
+                        esp.Tracer.Visible = TracerESPEnabled and showESP
                         if esp.Tracer.Visible then
                             esp.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
                             esp.Tracer.To = Vector2.new(topPos.X, topPos.Y)
                         end
                         
                         -- NAME UND DISTANCE ESP UNTER DEM SPIELER (JETZT MIT + STATT -)
-                        esp.Name.Visible = NameESPEnabled
+                        esp.Name.Visible = NameESPEnabled and showESP
                         if esp.Name.Visible then
                             esp.Name.Text = player.Name
                             esp.Name.Position = Vector2.new(topPos.X, bottomPos.Y + 5) -- UNTER dem Spieler
                         end
                         
-                        esp.Distance.Visible = DistanceESPEnabled
+                        esp.Distance.Visible = DistanceESPEnabled and showESP
                         if esp.Distance.Visible then
                             local distance = (top - Camera.CFrame.Position).Magnitude
                             esp.Distance.Text = tostring(math.floor(distance)) .. "m"
                             esp.Distance.Position = Vector2.new(topPos.X, bottomPos.Y + 20) -- UNTER dem Spieler
                         end
                         
-                        if HealthBarESPEnabled then
+                        if HealthBarESPEnabled and showESP then
                             local healthPercentage = humanoid.Health / humanoid.MaxHealth
                             local healthBarWidth = 4
                             local healthBarHeight = boxHeight
@@ -1228,7 +1467,7 @@ local function triggerbot()
         wait(0.05)
         VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
         
-        print("🔫 TRIGGERBOT AKTIVIERT!")
+        print("TRIGGERBOT AKTIVIERT!")
         LastTriggerTime = currentTime
     end
 end
@@ -1380,4 +1619,4 @@ RunService.Heartbeat:Connect(function()
     updateTargetIndicator()
 end)
 
-print("✅ SEROTONIN GUI - MIT TEAMCHECK, PERFEKTER SLIDER POSITION & FILL CIRCLE!")
+print("SEROTONIN GUI LOADED - WITH TEAMCHECK, PERFECT SLIDER POSITION, FILL CIRCLE, ESP TEAMCHECK & MISC TAB!")
