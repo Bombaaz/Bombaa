@@ -1,0 +1,1403 @@
+-- 🧠 ROOT HUB - COMPLETE FIXED SCRIPT
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- GUI erstellen
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RootHub"
+screenGui.Parent = PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 280, 0, 470)
+mainFrame.Position = UDim2.new(0, 20, 0, 20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+-- Runde Ecken
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = mainFrame
+
+-- Hintergrund Glow Effekt
+local glow = Instance.new("Frame")
+glow.Size = UDim2.new(1, 10, 1, 10)
+glow.Position = UDim2.new(0, -5, 0, -5)
+glow.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+glow.BackgroundTransparency = 0.9
+glow.BorderSizePixel = 0
+glow.ZIndex = -1
+glow.Parent = mainFrame
+
+local glowCorner = Instance.new("UICorner")
+glowCorner.CornerRadius = UDim.new(0, 16)
+glowCorner.Parent = glow
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 40)
+header.Position = UDim2.new(0, 0, 0, 0)
+header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+header.BackgroundTransparency = 0.2
+header.BorderSizePixel = 0
+header.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "ROOT HUB"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 18
+title.TextStrokeTransparency = 0.8
+title.Parent = header
+
+-- Status Display
+local statusFrame = Instance.new("Frame")
+statusFrame.Size = UDim2.new(1, -20, 0, 60)
+statusFrame.Position = UDim2.new(0, 10, 0, 50)
+statusFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+statusFrame.BackgroundTransparency = 0.3
+statusFrame.BorderSizePixel = 0
+statusFrame.Parent = mainFrame
+
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 8)
+statusCorner.Parent = statusFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, 0, 1, 0)
+statusLabel.Position = UDim2.new(0, 0, 0, 0)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Text = "🟢 SYSTEM READY\n📊 Found: 0"
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextWrapped = true
+statusLabel.Parent = statusFrame
+
+-- Buttons Container
+local buttonContainer = Instance.new("Frame")
+buttonContainer.Size = UDim2.new(1, -20, 0, 220)
+buttonContainer.Position = UDim2.new(0, 10, 0, 120)
+buttonContainer.BackgroundTransparency = 1
+buttonContainer.Parent = mainFrame
+
+-- Toggle Switch Funktion
+function createToggleSwitch(name, yPosition)
+    local toggleFrame = Instance.new("Frame")
+    toggleFrame.Size = UDim2.new(1, 0, 0, 35)
+    toggleFrame.Position = UDim2.new(0, 0, 0, yPosition)
+    toggleFrame.BackgroundTransparency = 1
+    toggleFrame.Parent = buttonContainer
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggleFrame
+    
+    -- Switch Hintergrund
+    local switchBackground = Instance.new("Frame")
+    switchBackground.Size = UDim2.new(0, 50, 0, 25)
+    switchBackground.Position = UDim2.new(1, -50, 0.5, -12)
+    switchBackground.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    switchBackground.BorderSizePixel = 0
+    switchBackground.Parent = toggleFrame
+    
+    local switchCorner = Instance.new("UICorner")
+    switchCorner.CornerRadius = UDim.new(1, 0)
+    switchCorner.Parent = switchBackground
+    
+    -- Switch Knopf
+    local switchButton = Instance.new("Frame")
+    switchButton.Size = UDim2.new(0, 21, 0, 21)
+    switchButton.Position = UDim2.new(0, 2, 0.5, -10)
+    switchButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    switchButton.BorderSizePixel = 0
+    switchButton.Parent = switchBackground
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(1, 0)
+    buttonCorner.Parent = switchButton
+    
+    return toggleFrame, switchBackground, switchButton
+end
+
+-- Erstelle Toggle Switches
+local espToggle, espBackground, espButton = createToggleSwitch("ESP", 0)
+local tracerToggle, tracerBackground, tracerButton = createToggleSwitch("Tracer", 40)
+local infoToggle, infoBackground, infoButton = createToggleSwitch("Info GUI", 80)
+local xrayToggle, xrayBackground, xrayButton = createToggleSwitch("Base XRAY", 120)
+local flyToggle, flyBackground, flyButton = createToggleSwitch("FLY Mode", 160)
+
+-- Server Hop Button
+local serverHopFrame = Instance.new("Frame")
+serverHopFrame.Size = UDim2.new(1, 0, 0, 40)
+serverHopFrame.Position = UDim2.new(0, 0, 0, 200)
+serverHopFrame.BackgroundTransparency = 1
+serverHopFrame.Parent = buttonContainer
+
+local serverHopButton = Instance.new("TextButton")
+serverHopButton.Size = UDim2.new(1, 0, 1, 0)
+serverHopButton.Position = UDim2.new(0, 0, 0, 0)
+serverHopButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+serverHopButton.Text = "SERVER HOP"
+serverHopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+serverHopButton.Font = Enum.Font.GothamBold
+serverHopButton.TextSize = 14
+serverHopButton.Parent = serverHopFrame
+
+local serverHopCorner = Instance.new("UICorner")
+serverHopCorner.CornerRadius = UDim.new(0, 8)
+serverHopCorner.Parent = serverHopButton
+
+-- Toggle Animation Funktion
+function animateToggle(background, button, enabled)
+    local targetColor = enabled and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(80, 80, 80)
+    local targetPosition = enabled and UDim2.new(1, -23, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+    
+    local colorTween = TweenService:Create(background, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundColor3 = targetColor
+    })
+    
+    local positionTween = TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = targetPosition
+    })
+    
+    colorTween:Play()
+    positionTween:Play()
+end
+
+-- Config Buttons Container
+local configContainer = Instance.new("Frame")
+configContainer.Size = UDim2.new(1, -20, 0, 40)
+configContainer.Position = UDim2.new(0, 10, 0, 370)
+configContainer.BackgroundTransparency = 1
+configContainer.Parent = mainFrame
+
+-- Save Config Button
+local saveConfigButton = Instance.new("TextButton")
+saveConfigButton.Size = UDim2.new(0.48, 0, 1, 0)
+saveConfigButton.Position = UDim2.new(0, 0, 0, 0)
+saveConfigButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+saveConfigButton.Text = "SAVE CONFIG"
+saveConfigButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveConfigButton.Font = Enum.Font.GothamBold
+saveConfigButton.TextSize = 12
+saveConfigButton.Parent = configContainer
+
+local saveConfigCorner = Instance.new("UICorner")
+saveConfigCorner.CornerRadius = UDim.new(0, 6)
+saveConfigCorner.Parent = saveConfigButton
+
+-- Load Config Button
+local loadConfigButton = Instance.new("TextButton")
+loadConfigButton.Size = UDim2.new(0.48, 0, 1, 0)
+loadConfigButton.Position = UDim2.new(0.52, 0, 0, 0)
+loadConfigButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+loadConfigButton.Text = "LOAD CONFIG"
+loadConfigButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+loadConfigButton.Font = Enum.Font.GothamBold
+loadConfigButton.TextSize = 12
+loadConfigButton.Parent = configContainer
+
+local loadConfigCorner = Instance.new("UICorner")
+loadConfigCorner.CornerRadius = UDim.new(0, 6)
+loadConfigCorner.Parent = loadConfigButton
+
+-- Footer
+local footer = Instance.new("Frame")
+footer.Size = UDim2.new(1, 0, 0, 30)
+footer.Position = UDim2.new(0, 0, 1, -30)
+footer.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+footer.BackgroundTransparency = 0.2
+footer.BorderSizePixel = 0
+footer.Parent = mainFrame
+
+local footerCorner = Instance.new("UICorner")
+footerCorner.CornerRadius = UDim.new(0, 12)
+footerCorner.Parent = footer
+
+local version = Instance.new("TextLabel")
+version.Size = UDim2.new(1, 0, 1, 0)
+version.Position = UDim2.new(0, 0, 0, 0)
+version.BackgroundTransparency = 1
+version.Text = "v4.2.0 | ROOT HUB"
+version.TextColor3 = Color3.fromRGB(150, 150, 150)
+version.Font = Enum.Font.Gotham
+version.TextSize = 10
+version.Parent = footer
+
+-- Close Button
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 20, 0, 20)
+closeButton.Position = UDim2.new(1, -25, 0, 10)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeButton.Text = "×"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.Font = Enum.Font.GothamBlack
+closeButton.TextSize = 14
+closeButton.Parent = header
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(1, 0)
+closeCorner.Parent = closeButton
+
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+-- Hover Effekte für Close Button
+closeButton.MouseEnter:Connect(function()
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+end)
+
+closeButton.MouseLeave:Connect(function()
+    closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+end)
+
+-- =============================================
+-- TRACER SYSTEM - COMPLETELY FIXED (RICHTIGE POSITION)
+-- =============================================
+
+local tracerEnabled = false
+local tracerConnections = {}
+local tracerBeams = {}
+local tracerParts = {}
+
+-- Tracer erstellen - FIXED POSITION
+function createTracer(targetPart)
+    if not targetPart or not targetPart.Parent then 
+        return 
+    end
+    
+    -- Prüfe ob bereits ein Tracer für dieses Part existiert
+    if tracerParts[targetPart] then
+        return tracerParts[targetPart]
+    end
+    
+    -- Erstelle einen schlanken Beam für den Tracer
+    local beam = Instance.new("Beam")
+    beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+    beam.FaceCamera = false
+    beam.Width0 = 0.1
+    beam.Width1 = 0.1
+    beam.Texture = "rbxasset://textures/beam.png"
+    beam.TextureSpeed = 1
+    beam.LightEmission = 0.3
+    beam.LightInfluence = 0
+    
+    -- Start Attachment (SPIELER POSITION)
+    local startAttachment = Instance.new("Attachment")
+    startAttachment.Parent = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") or workspace.CurrentCamera
+    startAttachment.Name = "TracerStart_" .. targetPart.Name
+    
+    -- End Attachment (am Target - GENAU DAS GLEICHE WIE ESP)
+    local endAttachment = Instance.new("Attachment")
+    endAttachment.Parent = targetPart
+    endAttachment.Name = "TracerEnd_" .. targetPart.Name
+    
+    beam.Attachment0 = startAttachment
+    beam.Attachment1 = endAttachment
+    beam.Parent = workspace.CurrentCamera
+    
+    -- Sanfter Rainbow Effekt
+    local hue = 0
+    local rainbowConnection = RunService.RenderStepped:Connect(function()
+        if beam and beam.Parent and startAttachment and endAttachment and targetPart and targetPart.Parent then
+            hue = (hue + 0.02) % 1
+            local rainbowColor = Color3.fromHSV(hue, 0.8, 1)
+            beam.Color = ColorSequence.new(rainbowColor)
+            
+            -- WICHTIG: Start Position ist jetzt der SPIELER
+            local character = Player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                startAttachment.WorldPosition = character.HumanoidRootPart.Position + Vector3.new(0, 2, 0)
+            else
+                startAttachment.WorldPosition = workspace.CurrentCamera.CFrame.Position
+            end
+            
+        else
+            rainbowConnection:Disconnect()
+        end
+    end)
+    
+    tracerParts[targetPart] = {
+        beam = beam,
+        connection = rainbowConnection,
+        startAttachment = startAttachment,
+        endAttachment = endAttachment
+    }
+    
+    table.insert(tracerBeams, beam)
+    table.insert(tracerConnections, rainbowConnection)
+    
+    return beam
+end
+
+-- Alle Tracer entfernen
+function cleanupTracers()
+    for targetPart, tracerData in pairs(tracerParts) do
+        if tracerData.connection then
+            tracerData.connection:Disconnect()
+        end
+        if tracerData.beam then
+            tracerData.beam:Destroy()
+        end
+        if tracerData.startAttachment then
+            tracerData.startAttachment:Destroy()
+        end
+        if tracerData.endAttachment then
+            tracerData.endAttachment:Destroy()
+        end
+    end
+    
+    tracerParts = {}
+    tracerBeams = {}
+    tracerConnections = {}
+end
+
+-- Tracer für alle gefundenen Secrets aktualisieren
+function updateTracers()
+    cleanupTracers()
+    
+    if not tracerEnabled then 
+        return 
+    end
+    
+    for secretKey, _ in pairs(foundSecrets) do
+        local plotName, podiumName, displayName = secretKey:match("(.+)_(.+)_(.+)")
+        if plotName and podiumName and displayName then
+            local plotsFolder = workspace:FindFirstChild("Plots")
+            if plotsFolder then
+                local plotModel = plotsFolder:FindFirstChild(plotName)
+                if plotModel then
+                    local animalPodiums = plotModel:FindFirstChild("AnimalPodiums")
+                    if animalPodiums then
+                        local podiumNumber = animalPodiums:FindFirstChild(podiumName)
+                        if podiumNumber then
+                            local base = podiumNumber:FindFirstChild("Base")
+                            if base then
+                                createTracer(base)
+                            end
+                            
+                            local petModel = findPetModelInPlot(plotModel, displayName)
+                            if petModel then
+                                local primaryPart = petModel.PrimaryPart or petModel:FindFirstChildWhichIsA("BasePart")
+                                if primaryPart then
+                                    createTracer(primaryPart)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Tracer Toggle Funktion
+function toggleTracer(enabled)
+    tracerEnabled = enabled
+    animateToggle(tracerBackground, tracerButton, enabled)
+    
+    if enabled then
+        print("✅ Tracer aktiviert (Vom Spieler zum Target)")
+        updateTracers()
+    else
+        print("❌ Tracer deaktiviert")
+        cleanupTracers()
+    end
+end
+
+-- =============================================
+-- CONFIG SYSTEM
+-- =============================================
+
+-- Config Daten
+local configData = {
+    espEnabled = false,
+    tracerEnabled = false,
+    infoEnabled = false,
+    xrayEnabled = false,
+    flyEnabled = false,
+    foundCount = 0
+}
+
+-- Config speichern
+function saveConfig()
+    local configToSave = {
+        espEnabled = espEnabled,
+        tracerEnabled = tracerEnabled,
+        infoEnabled = infoEnabled,
+        xrayEnabled = xrayEnabled,
+        flyEnabled = flyEnabled,
+        foundCount = foundCount
+    }
+    
+    local success, result = pcall(function()
+        writefile("RootHub_Config.json", HttpService:JSONEncode(configToSave))
+    end)
+    
+    if success then
+        statusLabel.Text = "CONFIG SAVED\nFound: " .. foundCount
+        print("✅ Config gespeichert!")
+    else
+        statusLabel.Text = "SAVE FAILED\nFound: " .. foundCount
+        print("❌ Config konnte nicht gespeichert werden: " .. tostring(result))
+    end
+end
+
+-- Config laden
+function loadConfig()
+    local success, result = pcall(function()
+        if isfile("RootHub_Config.json") then
+            local configContent = readfile("RootHub_Config.json")
+            return HttpService:JSONDecode(configContent)
+        end
+        return nil
+    end)
+    
+    if success and result then
+        -- Setze alle Toggles basierend auf Config
+        if result.espEnabled ~= nil then
+            toggleESP(result.espEnabled)
+        end
+        if result.tracerEnabled ~= nil then
+            toggleTracer(result.tracerEnabled)
+        end
+        if result.infoEnabled ~= nil then
+            toggleInfoGUI(result.infoEnabled)
+        end
+        if result.xrayEnabled ~= nil then
+            toggleXRAY(result.xrayEnabled)
+        end
+        if result.flyEnabled ~= nil then
+            toggleFLY(result.flyEnabled)
+        end
+        if result.foundCount ~= nil then
+            foundCount = result.foundCount
+        end
+        
+        statusLabel.Text = "CONFIG LOADED\nFound: " .. foundCount
+        print("✅ Config geladen!")
+    else
+        statusLabel.Text = "NO CONFIG FOUND\nFound: " .. foundCount
+        print("❌ Keine Config gefunden oder Fehler beim Laden")
+    end
+end
+
+-- Config Button Hover Effekte
+saveConfigButton.MouseEnter:Connect(function()
+    saveConfigButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+end)
+
+saveConfigButton.MouseLeave:Connect(function()
+    saveConfigButton.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+end)
+
+loadConfigButton.MouseEnter:Connect(function()
+    loadConfigButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+end)
+
+loadConfigButton.MouseLeave:Connect(function()
+    loadConfigButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+end)
+
+-- Config Button Klicks
+saveConfigButton.MouseButton1Click:Connect(function()
+    saveConfig()
+end)
+
+loadConfigButton.MouseButton1Click:Connect(function()
+    loadConfig()
+end)
+
+-- =============================================
+-- SERVER HOP FUNKTION
+-- =============================================
+
+function findNewServer()
+    local gameId = game.PlaceId
+    local servers = {}
+    
+    statusLabel.Text = "Searching for servers..."
+    
+    local success, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. gameId .. "/servers/Public?sortOrder=Asc&limit=100"))
+    end)
+    
+    if success and result and result.data then
+        for _, server in pairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                table.insert(servers, server)
+            end
+        end
+        
+        if #servers > 0 then
+            local randomServer = servers[math.random(1, #servers)]
+            statusLabel.Text = "Joining server..."
+            TeleportService:TeleportToPlaceInstance(gameId, randomServer.id, Player)
+        else
+            statusLabel.Text = "No servers found"
+            wait(2)
+            statusLabel.Text = "SYSTEM READY\nFound: " .. foundCount
+        end
+    else
+        statusLabel.Text = "Server search failed"
+        wait(2)
+        statusLabel.Text = "SYSTEM READY\nFound: " .. foundCount
+    end
+end
+
+-- Server Hop Button Hover Effekte
+serverHopButton.MouseEnter:Connect(function()
+    serverHopButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+end)
+
+serverHopButton.MouseLeave:Connect(function()
+    serverHopButton.BackgroundColor3 = Color3.fromRGB(0, 100, 255)
+end)
+
+serverHopButton.MouseButton1Click:Connect(function()
+    findNewServer()
+end)
+
+-- =============================================
+-- AB HIER KOMMEN DIE ECHTEN FUNKTIONEN
+-- =============================================
+
+-- Performance Optimierte Variablen
+local rainbowConnections = {}
+local espBillboards = {}
+local activeHighlights = {}
+local foundSecrets = {}
+local currentScanning = false
+local lastScanTime = 0
+local SCAN_COOLDOWN = 1
+
+-- Fly Variablen
+local flyConnection
+local grappleSpamConnection
+local bodyVelocity
+
+-- Getrennte Tracking für ESP und Info GUI
+local espHighlights = {}
+local infoBillboards = {}
+local foundCount = 0
+
+-- Status Variablen
+local espEnabled = false
+local tracerEnabled = false
+local infoEnabled = false
+local xrayEnabled = false
+local flyEnabled = false
+
+-- XRAY Variablen
+local xrayParts = {}
+local originalTransparency = {}
+
+-- Rainbow Highlight Funktion
+function createRainbowHighlight(part)
+    if not part or not part.Parent then return nil end
+    
+    for i = #espHighlights, 1, -1 do
+        local existingHighlight = espHighlights[i]
+        if not existingHighlight or not existingHighlight.Parent then
+            table.remove(espHighlights, i)
+        elseif existingHighlight.Parent == part then
+            return existingHighlight
+        end
+    end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0
+    highlight.Parent = part
+    
+    local hue = 0
+    local rainbowConnection = RunService.Heartbeat:Connect(function()
+        if highlight and highlight.Parent then
+            hue = (hue + 0.01) % 1
+            highlight.FillColor = Color3.fromHSV(hue, 1, 1)
+            highlight.OutlineColor = Color3.fromHSV((hue + 0.5) % 1, 1, 1)
+        else
+            rainbowConnection:Disconnect()
+        end
+    end)
+    
+    table.insert(rainbowConnections, rainbowConnection)
+    table.insert(espHighlights, highlight)
+    table.insert(activeHighlights, highlight)
+    return highlight
+end
+
+-- ESP Billboard Funktion - GEFIXTE RARITY ERKENNUNG
+function createESP(part, rarityType, generationText, displayName, plotName, podiumName, mutationText)
+    if not part or not part.Parent then return nil end
+    
+    for i = #infoBillboards, 1, -1 do
+        local existingBillboard = infoBillboards[i]
+        if not existingBillboard or not existingBillboard.Parent then
+            table.remove(infoBillboards, i)
+        elseif existingBillboard.Parent == part then
+            return existingBillboard
+        end
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size = UDim2.new(0, 200, 0, 100)
+    billboard.StudsOffset = Vector3.new(0, 4, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Adornee = part
+    billboard.MaxDistance = 800
+    billboard.Enabled = true
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    frame.BackgroundTransparency = 0.1
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = frame
+    
+    -- BESSERE RARITY ERKENNUNG
+    local cleanRarity = "Unknown"
+    if rarityType then
+        local rarityLower = string.lower(tostring(rarityType))
+        if string.find(rarityLower, "secret") then
+            cleanRarity = "🔮 SECRET"
+        elseif string.find(rarityLower, "og") then
+            cleanRarity = "👑 OG"
+        elseif string.find(rarityLower, "exclusive") then
+            cleanRarity = "💎 EXCLUSIVE"
+        elseif string.find(rarityLower, "rainbow") then
+            cleanRarity = "🌈 RAINBOW"
+        elseif string.find(rarityLower, "gold") or string.find(rarityLower, "golden") then
+            cleanRarity = "⭐ GOLD"
+        elseif string.find(rarityLower, "dm") or string.find(rarityLower, "dark") then
+            cleanRarity = "🌙 DARK MATTER"
+        else
+            cleanRarity = "🎯 " .. rarityType
+        end
+    end
+    
+    local cleanMutationText = cleanTraitText(mutationText)
+    
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = cleanRarity .. 
+                    "\n🏷️ " .. (displayName or "Unknown") .. 
+                    "\n🔢 " .. (generationText or "Gen ?") .. 
+                    "\n🧬 " .. cleanMutationText
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 12
+    textLabel.TextScaled = false
+    textLabel.TextWrapped = true
+    textLabel.Parent = frame
+    
+    billboard.Parent = part
+    table.insert(infoBillboards, billboard)
+    table.insert(espBillboards, billboard)
+    
+    return billboard
+end
+
+-- VERBESSERTE TRAIT TEXT BEREINIGUNG
+function cleanTraitText(mutationText)
+    if not mutationText or mutationText == "" or mutationText == "No Traits" then
+        return "No Traits"
+    end
+    
+    local cleanText = tostring(mutationText)
+    
+    -- Entferne unerwünschte Zeichen und Zahlen
+    cleanText = string.gsub(cleanText, "[%d%c]", "") -- Entferne Zahlen und Steuerzeichen
+    cleanText = string.gsub(cleanText, "color", "")
+    cleanText = string.gsub(cleanText, "fff", "")
+    cleanText = string.gsub(cleanText, "uandp", "")
+    cleanText = string.gsub(cleanText, "  ", " ")
+    cleanText = string.gsub(cleanText, "^%s*(.-)%s*$", "%1") -- Trim whitespace
+    
+    -- Spezielle Trait-Erkennung
+    if string.find(string.lower(cleanText), "yin") or string.find(string.lower(cleanText), "yang") then
+        return "Ying Yang"
+    elseif string.find(string.lower(cleanText), "rainbow") then
+        return "Rainbow"
+    elseif string.find(string.lower(cleanText), "shiny") then
+        return "Shiny"
+    elseif string.find(string.lower(cleanText), "royal") then
+        return "Royal"
+    end
+    
+    if cleanText == "" or string.len(cleanText) < 2 then
+        return "Special Trait"
+    end
+    
+    -- Ersten Buchstaben groß schreiben
+    cleanText = string.upper(string.sub(cleanText, 1, 1)) .. string.sub(cleanText, 2)
+    
+    return cleanText
+end
+
+-- Getrenntes Cleanup
+function cleanupESPOnly()
+    for i = #espHighlights, 1, -1 do
+        local highlight = espHighlights[i]
+        if highlight and highlight.Parent then
+            highlight:Destroy()
+        end
+        table.remove(espHighlights, i)
+    end
+end
+
+function cleanupInfoGUIOnly()
+    for i = #infoBillboards, 1, -1 do
+        local billboard = infoBillboards[i]
+        if billboard and billboard.Parent then
+            billboard:Destroy()
+        end
+        table.remove(infoBillboards, i)
+    end
+end
+
+-- XRAY Funktion
+function applyXRAY()
+    local plotsFolder = workspace:FindFirstChild("Plots")
+    if not plotsFolder then 
+        print("❌ Kein Plots Ordner gefunden")
+        return 
+    end
+    
+    for part, _ in pairs(xrayParts) do
+        if part and part.Parent then
+            part.LocalTransparencyModifier = 0
+        end
+    end
+    xrayParts = {}
+    originalTransparency = {}
+    
+    if xrayEnabled then
+        print("🔍 Aktiviere XRAY für ALLE Decorations...")
+        local totalXrayParts = 0
+        
+        for _, plotModel in pairs(plotsFolder:GetChildren()) do
+            if plotModel:IsA("Model") then
+                local decorations = plotModel:FindFirstChild("Decorations")
+                if decorations then
+                    for _, decoration in pairs(decorations:GetDescendants()) do
+                        if decoration:IsA("BasePart") then
+                            originalTransparency[decoration] = decoration.LocalTransparencyModifier
+                            decoration.LocalTransparencyModifier = 0.8
+                            xrayParts[decoration] = true
+                            totalXrayParts = totalXrayParts + 1
+                        end
+                    end
+                end
+            end
+        end
+        print("✅ Base XRAY aktiviert - " .. totalXrayParts .. " Teile durchsichtig")
+        statusLabel.Text = "XRAY ACTIVE\nParts: " .. totalXrayParts
+    else
+        print("❌ Base XRAY deaktiviert - Entferne Transparenz...")
+        for part, _ in pairs(originalTransparency) do
+            if part and part.Parent then
+                part.LocalTransparencyModifier = originalTransparency[part] or 0
+            end
+        end
+        xrayParts = {}
+        originalTransparency = {}
+        statusLabel.Text = "SYSTEM READY\nFound: " .. foundCount
+    end
+end
+
+-- Fly Funktionen
+function enableFly()
+    local character = Player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not rootPart then return end
+    
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+    
+    bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.MaxForce = Vector3.new(40000, 40000, 40000)
+    bodyVelocity.Parent = rootPart
+    
+    flyConnection = RunService.Heartbeat:Connect(function()
+        if not bodyVelocity or not bodyVelocity.Parent then return end
+        
+        local direction = Vector3.new(0, 0, 0)
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            direction = direction + rootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            direction = direction - rootPart.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            direction = direction - rootPart.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            direction = direction + rootPart.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            direction = direction + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            direction = direction + Vector3.new(0, -1, 0)
+        end
+        
+        if direction.Magnitude > 0 then
+            bodyVelocity.Velocity = direction.Unit * 50
+        else
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        end
+    end)
+    
+    print("✅ Fly aktiviert - Steuerung: W/A/S/D + Space/Shift")
+end
+
+function disableFly()
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
+    end
+    
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+    
+    print("❌ Fly deaktiviert")
+end
+
+function startGrappleSpam()
+    local character = Player.Character
+    if not character then return end
+    
+    local backpack = Player:FindFirstChild("Backpack")
+    if not backpack then
+        print("❌ Kein Backpack gefunden")
+        return
+    end
+    
+    local grappleHook
+    for _, tool in pairs(backpack:GetChildren()) do
+        if string.find(string.lower(tool.Name), "grapple") or string.find(string.lower(tool.Name), "hook") then
+            grappleHook = tool
+            break
+        end
+    end
+    
+    if not grappleHook then
+        print("❌ Keine Grapple Hook im Backpack gefunden")
+        return
+    end
+    
+    grappleHook.Parent = character
+    print("✅ Grapple Hook ausgerüstet: " .. grappleHook.Name)
+    
+    grappleSpamConnection = RunService.Heartbeat:Connect(function()
+        if not grappleHook or grappleHook.Parent ~= character then return end
+        
+        local mouse = Player:GetMouse()
+        local originalTarget = mouse.Target
+        
+        mouse.Target = workspace.Terrain or workspace
+        
+        if grappleHook:FindFirstChild("Activate") then
+            grappleHook.Activate:Fire()
+        end
+        
+        wait(0.1)
+        if grappleHook:FindFirstChild("Deactivate") then
+            grappleHook.Deactivate:Fire()
+        end
+        
+        mouse.Target = originalTarget
+        wait(0.5)
+    end)
+    
+    print("✅ Grapple Spam aktiviert")
+end
+
+function stopGrappleSpam()
+    if grappleSpamConnection then
+        grappleSpamConnection:Disconnect()
+        grappleSpamConnection = nil
+    end
+    
+    local character = Player.Character
+    if character then
+        for _, tool in pairs(character:GetChildren()) do
+            if tool:IsA("Tool") and (string.find(string.lower(tool.Name), "grapple") or string.find(string.lower(tool.Name), "hook")) then
+                tool.Parent = Player.Backpack
+            end
+        end
+    end
+    
+    print("❌ Grapple Spam deaktiviert")
+end
+
+-- Scan Funktionen
+function findPetModelInPlot(plotModel, petName)
+    for _, obj in pairs(plotModel:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == petName then
+            return obj
+        end
+    end
+    return nil
+end
+
+-- VERBESSERTE SCAN FUNKTION FÜR KORREKTE RARITY
+function scanAnimalPodium(podiumNumber, plotModel)
+    local base = podiumNumber:FindFirstChild("Base")
+    if not base then return false end
+    
+    local spawn = base:FindFirstChild("Spawn")
+    if not spawn then return false end
+    
+    local attachment = spawn:FindFirstChild("Attachment")
+    if not attachment then return false end
+    
+    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+    if not animalOverhead then return false end
+    
+    local rarityText = ""
+    local generationText = ""
+    local displayName = ""
+    local mutationText = ""
+    
+    -- DURCHSUCHE ALLE TEXTLABELS GRÜNDLICH
+    for _, textObj in pairs(animalOverhead:GetDescendants()) do
+        if textObj:IsA("TextLabel") or textObj:IsA("TextButton") then
+            local textValue = tostring(textObj.Text)
+            
+            if textValue and textValue ~= "" then
+                -- Prüfe auf Rarity (case-insensitive)
+                local textLower = string.lower(textValue)
+                if string.find(textLower, "secret") or string.find(textLower, "og") or 
+                   string.find(textLower, "exclusive") or string.find(textLower, "rainbow") or
+                   string.find(textLower, "gold") or string.find(textLower, "dark") then
+                    rarityText = textValue
+                elseif string.find(textLower, "gen") or string.find(textValue, "G") then
+                    generationText = textValue
+                elseif string.len(textValue) > 3 and string.len(textValue) < 30 and not string.find(textLower, "rarity") then
+                    -- Vermutlich DisplayName
+                    displayName = textValue
+                end
+            end
+        end
+    end
+    
+    -- FALLBACK: Durchsuche auch andere Teile des Podiums
+    if rarityText == "" then
+        for _, obj in pairs(podiumNumber:GetDescendants()) do
+            if obj:IsA("TextLabel") then
+                local textValue = tostring(obj.Text)
+                local textLower = string.lower(textValue)
+                if string.find(textLower, "secret") or string.find(textLower, "og") then
+                    rarityText = textValue
+                    break
+                end
+            end
+        end
+    end
+    
+    local rarityLower = string.lower(tostring(rarityText))
+    if string.find(rarityLower, "secret") or string.find(rarityLower, "og") or
+       string.find(rarityLower, "exclusive") or string.find(rarityLower, "rainbow") then
+        
+        local secretKey = plotModel.Name .. "_" .. podiumNumber.Name .. "_" .. displayName
+        
+        if foundSecrets[secretKey] then
+            return true
+        end
+        
+        foundSecrets[secretKey] = true
+        foundCount = foundCount + 1
+        statusLabel.Text = "SYSTEM ACTIVE\nFound: " .. foundCount
+        
+        if espEnabled then
+            createRainbowHighlight(base)
+        end
+        
+        -- TRACER FIXED (VOM SPIELER ZUM TARGET)
+        if tracerEnabled then
+            createTracer(base)
+        end
+        
+        if displayName ~= "" then
+            local petModel = findPetModelInPlot(plotModel, displayName)
+            if petModel then
+                if espEnabled then
+                    createRainbowHighlight(petModel)
+                end
+                -- TRACER FIXED (VOM SPIELER ZUM TARGET)
+                if tracerEnabled then
+                    local primaryPart = petModel.PrimaryPart or petModel:FindFirstChildWhichIsA("BasePart")
+                    if primaryPart then
+                        createTracer(primaryPart)
+                    end
+                end
+                if infoEnabled then
+                    createESP(petModel, rarityText, generationText, displayName, plotModel.Name, podiumNumber.Name, mutationText)
+                end
+            end
+        end
+        
+        return true
+    end
+    
+    return false
+end
+
+function scanPlot(plotModel)
+    local animalPodiums = plotModel:FindFirstChild("AnimalPodiums")
+    if not animalPodiums then return 0 end
+    
+    local foundInPlot = 0
+    for _, podiumNumber in pairs(animalPodiums:GetChildren()) do
+        if podiumNumber:IsA("Model") then
+            if scanAnimalPodium(podiumNumber, plotModel) then
+                foundInPlot = foundInPlot + 1
+            end
+        end
+    end
+    
+    return foundInPlot
+end
+
+function performScan()
+    if currentScanning or (tick() - lastScanTime) < SCAN_COOLDOWN then
+        return foundCount
+    end
+    
+    currentScanning = true
+    lastScanTime = tick()
+    
+    local plotsFolder = workspace:FindFirstChild("Plots")
+    if not plotsFolder then
+        statusLabel.Text = "No Plots Folder"
+        currentScanning = false
+        return 0
+    end
+    
+    local totalFound = 0
+    for _, plotModel in pairs(plotsFolder:GetChildren()) do
+        if plotModel:IsA("Model") then
+            local foundInPlot = scanPlot(plotModel)
+            totalFound = totalFound + foundInPlot
+        end
+    end
+    
+    currentScanning = false
+    return totalFound
+end
+
+-- Auto Scan Loop
+function startAutoScan()
+    while true do
+        wait(SCAN_COOLDOWN)
+        
+        if espEnabled or infoEnabled or tracerEnabled then
+            performScan()
+        end
+    end
+end
+
+-- Sofortiges Update ohne Rescan
+function updateExistingHighlights()
+    for secretKey, _ in pairs(foundSecrets) do
+        local plotName, podiumName, displayName = secretKey:match("(.+)_(.+)_(.+)")
+        if plotName and podiumName and displayName then
+            local plotsFolder = workspace:FindFirstChild("Plots")
+            if plotsFolder then
+                local plotModel = plotsFolder:FindFirstChild(plotName)
+                if plotModel then
+                    local animalPodiums = plotModel:FindFirstChild("AnimalPodiums")
+                    if animalPodiums then
+                        local podiumNumber = animalPodiums:FindFirstChild(podiumName)
+                        if podiumNumber then
+                            local base = podiumNumber:FindFirstChild("Base")
+                            if base then
+                                if espEnabled then
+                                    createRainbowHighlight(base)
+                                else
+                                    for i = #espHighlights, 1, -1 do
+                                        local highlight = espHighlights[i]
+                                        if highlight and highlight.Parent == base then
+                                            highlight:Destroy()
+                                            table.remove(espHighlights, i)
+                                            break
+                                        end
+                                    end
+                                end
+                                
+                                -- TRACER UPDATE FIXED
+                                if tracerEnabled then
+                                    createTracer(base)
+                                else
+                                    if tracerParts[base] then
+                                        local tracerData = tracerParts[base]
+                                        if tracerData.connection then
+                                            tracerData.connection:Disconnect()
+                                        end
+                                        if tracerData.beam then
+                                            tracerData.beam:Destroy()
+                                        end
+                                        if tracerData.startAttachment then
+                                            tracerData.startAttachment:Destroy()
+                                        end
+                                        if tracerData.endAttachment then
+                                            tracerData.endAttachment:Destroy()
+                                        end
+                                        tracerParts[base] = nil
+                                    end
+                                end
+                                
+                                local petModel = findPetModelInPlot(plotModel, displayName)
+                                if petModel then
+                                    local primaryPart = petModel.PrimaryPart or petModel:FindFirstChildWhichIsA("BasePart")
+                                    if primaryPart then
+                                        if espEnabled then
+                                            createRainbowHighlight(primaryPart)
+                                        else
+                                            for i = #espHighlights, 1, -1 do
+                                                local highlight = espHighlights[i]
+                                                if highlight and highlight.Parent == primaryPart then
+                                                    highlight:Destroy()
+                                                    table.remove(espHighlights, i)
+                                                    break
+                                                end
+                                            end
+                                        end
+                                        
+                                        -- TRACER UPDATE FIXED
+                                        if tracerEnabled then
+                                            createTracer(primaryPart)
+                                        else
+                                            if tracerParts[primaryPart] then
+                                                local tracerData = tracerParts[primaryPart]
+                                                if tracerData.connection then
+                                                    tracerData.connection:Disconnect()
+                                                end
+                                                if tracerData.beam then
+                                                    tracerData.beam:Destroy()
+                                                end
+                                                if tracerData.startAttachment then
+                                                    tracerData.startAttachment:Destroy()
+                                                end
+                                                if tracerData.endAttachment then
+                                                    tracerData.endAttachment:Destroy()
+                                                end
+                                                tracerParts[primaryPart] = nil
+                                            end
+                                        end
+                                    end
+                                    
+                                    if infoEnabled then
+                                        local rarityText, generationText, mutationText = getSecretData(podiumNumber)
+                                        if rarityText then
+                                            createESP(petModel, rarityText, generationText, displayName, plotName, podiumName, mutationText)
+                                        end
+                                    else
+                                        for i = #infoBillboards, 1, -1 do
+                                            local billboard = infoBillboards[i]
+                                            if billboard and billboard.Parent == petModel then
+                                                billboard:Destroy()
+                                                table.remove(infoBillboards, i)
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+function getSecretData(podiumNumber)
+    local base = podiumNumber:FindFirstChild("Base")
+    if not base then return nil end
+    
+    local spawn = base:FindFirstChild("Spawn")
+    if not spawn then return nil end
+    
+    local attachment = spawn:FindFirstChild("Attachment")
+    if not attachment then return nil end
+    
+    local animalOverhead = attachment:FindFirstChild("AnimalOverhead")
+    if not animalOverhead then return nil end
+    
+    local rarityText = ""
+    local generationText = ""
+    local mutationText = ""
+    
+    for _, textObj in pairs(animalOverhead:GetDescendants()) do
+        if textObj:IsA("TextLabel") or textObj:IsA("TextButton") then
+            local objName = string.upper(textObj.Name)
+            local textValue = tostring(textObj.Text)
+            
+            if string.find(objName, "RARITY") then
+                rarityText = textValue
+            elseif string.find(objName, "GENERATION") then
+                generationText = textValue
+            elseif string.find(objName, "DISPLAYNAME") or string.find(objName, "NAME") then
+                displayName = textValue
+            elseif string.find(objName, "MUTATION") then
+                mutationText = textValue
+            end
+        end
+    end
+    
+    return rarityText, generationText, mutationText
+end
+
+-- Toggle Funktionen
+function toggleESP(enabled)
+    espEnabled = enabled
+    animateToggle(espBackground, espButton, enabled)
+    
+    if enabled then
+        print("✅ ESP aktiviert")
+        cleanupESPOnly()
+        updateExistingHighlights()
+    else
+        print("❌ ESP deaktiviert")
+        cleanupESPOnly()
+    end
+end
+
+function toggleTracer(enabled)
+    tracerEnabled = enabled
+    animateToggle(tracerBackground, tracerButton, enabled)
+    
+    if enabled then
+        print("✅ Tracer aktiviert (Vom Spieler zum Target)")
+        updateTracers()
+    else
+        print("❌ Tracer deaktiviert")
+        cleanupTracers()
+    end
+end
+
+function toggleInfoGUI(enabled)
+    infoEnabled = enabled
+    animateToggle(infoBackground, infoButton, enabled)
+    
+    if enabled then
+        print("✅ Info GUI aktiviert")
+        updateExistingHighlights()
+    else
+        print("❌ Info GUI deaktiviert")
+        cleanupInfoGUIOnly()
+    end
+end
+
+function toggleXRAY(enabled)
+    xrayEnabled = enabled
+    animateToggle(xrayBackground, xrayButton, enabled)
+    
+    if enabled then
+        print("🔄 Aktiviere Base XRAY...")
+        wait(0.1)
+        applyXRAY()
+    else
+        print("🔄 Deaktiviere Base XRAY...")
+        applyXRAY()
+    end
+end
+
+function toggleFLY(enabled)
+    flyEnabled = enabled
+    animateToggle(flyBackground, flyButton, enabled)
+    
+    if enabled then
+        print("✅ FLY Mode aktiviert")
+        enableFly()
+        startGrappleSpam()
+    else
+        print("❌ FLY Mode deaktiviert")
+        disableFly()
+        stopGrappleSpam()
+    end
+end
+
+-- Verbinde Toggles mit Funktionen
+espToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleESP(not espEnabled)
+    end
+end)
+
+tracerToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleTracer(not tracerEnabled)
+    end
+end)
+
+infoToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleInfoGUI(not infoEnabled)
+    end
+end)
+
+xrayToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleXRAY(not xrayEnabled)
+    end
+end)
+
+flyToggle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        toggleFLY(not flyEnabled)
+    end
+end)
+
+-- Starte Auto Scan
+spawn(startAutoScan)
+
+-- Auto-Load Config beim Start
+wait(1)
+loadConfig()
+
+print("✅ ROOT HUB komplett geladen - Alle Funktionen aktiv!")
