@@ -1,0 +1,415 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- COMPLETE Brainrot Data
+local brainrotData = {
+    Common = {
+        "Noobini Pizzanini", "Pipi Corni", "Lirilì Larilà", "Tim Cheese", "Fluriflura", 
+        "Talpa Di Fero", "Svinina Bombardino", "Pipi Kiwi", "Tartaragno"
+    },
+    Rare = {
+        "Trippi Troppi", "Gangster Footera", "Bandito Bobritto", "Boneca Ambalabu", 
+        "Cacto Hipopotamo", "Ta Ta Ta Ta Sahur", "Tric Trac Baraboom", "Pinealotto Fruttarino"
+    },
+    Epic = {
+        "Cappuccino Assassino", "Brr Brr Patapim", "Avocadini Antilopini", "Trulimero Trulicina", 
+        "Bombini Crostini", "Bananita Dolphinita", "Perochello Lemonchello", 
+        "Brri Brri Bicus Dicus Bombicus", "Avocadini Guffo", "Salamino Penguino", 
+        "Mummio Rappitto", "Frogato Pirato"
+    },
+    Legendary = {
+        "Burbaloni Loliloli", "Chimpanzini Bananini", "Ballerina Cappuccina", 
+        "Chef Crabracadabra", "Lionel Cactuseli", "Glorbo Fruttodrillo", 
+        "Quivioli Ameleonni", "Blueberrinni Octopusini", "Pipi Potato", 
+        "Strawberrelli Flamingelli", "Pandaccini Bananini", "Sigma Boy", 
+        "Quackula", "Buho De Fuego"
+    },
+    Mythic = {
+        "Frigo Camelo", "Orangutini Ananassini", "Rhino Toasterino", 
+        "Bombardiro Crocodilo", "Bombombini Gusini", "Cavallo Virtuoso", 
+        "Gorillo Watermelondrillo", "Cachorrito Melonito", "Lerulerulerule", 
+        "Te Te Te Sahur", "Tracoducotulu Delapeladustuz", "Toiletto Focaccino", 
+        "Jacko Spaventosa", "Mythic Lucky Block"
+    },
+    BrainrotGod = {
+        "Cocofanto Elefanto", "Girafa Celestre", "Tralalero Tralala", 
+        "Tigroligre Frutonni", "Odin Din Din Dun", "Orcalero Orcala", 
+        "Tralalita Tralala", "Trenostruzzo Turbo 3000", "Trippi Troppi Troppa Trippa", 
+        "Ballerino Lololo", "Bulbito Bandito Traktorito", "Pakrahmatmamat", 
+        "Piccione Macchina", "Tractoro Dinosauro", "Los Orcalitos", 
+        "Cacasito Satalito", "Tartaruga Cisterna", "Mastodontico Telepiedone", 
+        "Snailenzo", "Tentacolo Tecnico", "Brainrot God Lucky Block"
+    },
+    Secret = {
+        "Las Sis", "La Vacca Staturno Saturnita", "Chimpanzini_spiderini", 
+        "Extinct Tralalero", "Extinct Matteo", "Los Tralaleirtos", 
+        "La Karkerkar Combinasion", "Karker Sahur", "Las Tralaleritas", 
+        "Job Job Job Sahur", "Los Spyderinis", "Perrito Burrito", 
+        "Graipuss Medussi", "Los Jobcitos", "La Grande Combinasion", 
+        "Tacorita Bicicleta", "Nuclearo Dinossauro", "Los 67", 
+        "Money Money Puggy", "Chillin Chili", "La Extinct Grande", 
+        "Los Tacoritas", "Los Tortus", "Tang Tang Kelentang", 
+        "Garama and Madundung", "La Secret combinasion", 
+        "Tortuginni Dragonfruitin", "To to to Sahur", "Las Vaquitas Saturnitas", 
+        "Chicleteira Bicicleteira", "Agarrini la Palini", "Mariachi corazoni", 
+        "Dragon Cannelloni", "Los Combinasionas", "La Cucaracha", 
+        "Karkerkar Kurkur", "Los Hotspotsitos", "La Sahur Combinasion", 
+        "Quesadilla Crocodila", "Esok Sekolah", "Los Matteos", 
+        "Dul Dul Dul", "Blackhole Goat", "Nooo My Hotspot", 
+        "Sammyini Spyderini", "Spaghetti Tualetti", "67", 
+        "Los Noo My Hotspotsitos", "Celularcini Viciosini", 
+        "Tralaledon", "Tictac sahur", "La Supreme Combinasion", 
+        "Ketupat Kepat", "Ketchuru and Musturu", "Burguro and Fryuro"
+    }
+}
+
+-- GUI erstellen
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "BrainrotFarmGUI"
+screenGui.Parent = player.PlayerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(0, 10, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Text = "Brainrot Farmer (Drag Me)"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = mainFrame
+
+local rarityLabel = Instance.new("TextLabel")
+rarityLabel.Size = UDim2.new(1, -20, 0, 25)
+rarityLabel.Position = UDim2.new(0, 10, 0, 50)
+rarityLabel.BackgroundTransparency = 1
+rarityLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+rarityLabel.Text = "Select Rarity:"
+rarityLabel.Font = Enum.Font.Gotham
+rarityLabel.TextSize = 14
+rarityLabel.TextXAlignment = Enum.TextXAlignment.Left
+rarityLabel.Parent = mainFrame
+
+-- DROPDOWN
+local rarityDropdown = Instance.new("TextButton")
+rarityDropdown.Size = UDim2.new(1, -20, 0, 30)
+rarityDropdown.Position = UDim2.new(0, 10, 0, 80)
+rarityDropdown.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+rarityDropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+rarityDropdown.Text = "Common ▼"
+rarityDropdown.Font = Enum.Font.Gotham
+rarityDropdown.TextSize = 14
+rarityDropdown.Parent = mainFrame
+
+local dropdownCorner = Instance.new("UICorner")
+dropdownCorner.CornerRadius = UDim.new(0, 4)
+dropdownCorner.Parent = rarityDropdown
+
+-- Dropdown Frame
+local dropdownFrame = Instance.new("Frame")
+dropdownFrame.Size = UDim2.new(1, -20, 0, 180)
+dropdownFrame.Position = UDim2.new(0, 10, 0, 115)
+dropdownFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+dropdownFrame.BorderSizePixel = 0
+dropdownFrame.Visible = false
+dropdownFrame.Parent = mainFrame
+
+local dropdownScroll = Instance.new("ScrollingFrame")
+dropdownScroll.Size = UDim2.new(1, 0, 1, 0)
+dropdownScroll.BackgroundTransparency = 1
+dropdownScroll.BorderSizePixel = 0
+dropdownScroll.ScrollBarThickness = 6
+dropdownScroll.Parent = dropdownFrame
+
+local dropdownList = Instance.new("UIListLayout")
+dropdownList.Parent = dropdownScroll
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -20, 0, 60)
+statusLabel.Position = UDim2.new(0, 10, 0, 310)
+statusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusLabel.Text = "Status: Ready\nHold E for 1s when <2 studs"
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 12
+statusLabel.TextWrapped = true
+statusLabel.Parent = mainFrame
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, -20, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 380)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "START FARMING"
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 16
+toggleButton.Parent = mainFrame
+
+-- Variablen
+local targetRarity = "Common"
+local isFarming = false
+local connection
+local currentTarget = nil
+local hasHeldE = false
+local boughtAnimals = {}
+
+-- ALLE RARITIES AUF ENGLISCH
+local rarityNames = {
+    "Common",
+    "Rare", 
+    "Epic",
+    "Legendary",
+    "Mythic",
+    "BrainrotGod",
+    "Secret"
+}
+
+-- DROPDOWN OPTIONEN ERSTELLEN
+local function createDropdownOptions()
+    dropdownScroll:ClearAllChildren()
+    
+    for i, rarity in ipairs(rarityNames) do
+        local option = Instance.new("TextButton")
+        option.Size = UDim2.new(1, 0, 0, 25)
+        option.Position = UDim2.new(0, 0, 0, (i-1) * 30)
+        option.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        option.TextColor3 = Color3.fromRGB(255, 255, 255)
+        option.Text = rarity
+        option.Font = Enum.Font.Gotham
+        option.TextSize = 14
+        option.Parent = dropdownScroll
+        
+        option.MouseButton1Click:Connect(function()
+            targetRarity = rarity
+            rarityDropdown.Text = rarity .. " ▼"
+            dropdownFrame.Visible = false
+            statusLabel.Text = "Selected: " .. rarity .. "\nHold E for 1s when <2 studs"
+            currentTarget = nil
+            boughtAnimals = {}
+            hasHeldE = false
+        end)
+    end
+    
+    dropdownScroll.CanvasSize = UDim2.new(0, 0, 0, #rarityNames * 30)
+end
+
+createDropdownOptions()
+
+-- Dropdown öffnen/schließen
+rarityDropdown.MouseButton1Click:Connect(function()
+    dropdownFrame.Visible = not dropdownFrame.Visible
+    if dropdownFrame.Visible then
+        createDropdownOptions()
+    end
+end)
+
+-- TIER SUCHEN
+local function findAnimalFolder()
+    return workspace:FindFirstChild("RenderedMovingAnimals")
+end
+
+local function findAnyTarget()
+    local folder = findAnimalFolder()
+    if not folder then 
+        return nil, "RenderedMovingAnimals folder not found!"
+    end
+    
+    local animals = brainrotData[targetRarity]
+    if not animals then 
+        return nil, "Invalid rarity" 
+    end
+    
+    -- Suche nach Tier das noch nicht gekauft wurde
+    for _, name in ipairs(animals) do
+        if not boughtAnimals[name] then
+            local animal = folder:FindFirstChild(name)
+            if animal then
+                local rootPart = animal:FindFirstChild("HumanoidRootPart") or animal:FindFirstChildWhichIsA("Part")
+                if rootPart then
+                    return animal, name
+                end
+            end
+        end
+    end
+    
+    return nil, "No " .. targetRarity .. " animals found"
+end
+
+-- Distanz checken
+local function getDistanceToAnimal(animal)
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local animalRoot = animal:FindFirstChild("HumanoidRootPart") or animal:FindFirstChildWhichIsA("Part")
+    
+    if root and animalRoot then
+        return (root.Position - animalRoot.Position).Magnitude
+    end
+    return math.huge
+end
+
+-- Bewegung zum Tier
+local function moveToAnimal(animal)
+    local animalRoot = animal:FindFirstChild("HumanoidRootPart") or animal:FindFirstChildWhichIsA("Part")
+    if animalRoot then
+        humanoid:MoveTo(animalRoot.Position)
+        return true
+    end
+    return false
+end
+
+-- E EINMAL für 1 Sekunde gedrückt halten
+local function holdEForOneSecond()
+    print("🎮 HALTE E GEDRÜCKT für 1 Sekunde...")
+    
+    -- E-Taste DRÜCKEN (Key down)
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    statusLabel.Text = "HOLDING E DOWN...\n1 second"
+    
+    -- WARTE 1 SEKUNDE (Hold)
+    wait(1.0)
+    
+    -- E-Taste LOSLASSEN (Key up)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    print("✅ E LOSGELASSEN nach 1 Sekunde")
+    statusLabel.Text = "E released - checking purchase..."
+    
+    return true
+end
+
+-- Tier kaufen - FINALE VERSION (NUR EINMAL E HALTEN)
+local function tryBuy(animal, animalName)
+    print("🛒 Kaufe: " .. animalName)
+    
+    -- Halte E EINMAL für 1 Sekunde gedrückt
+    holdEForOneSecond()
+    
+    -- Warte und prüfe ob Tier gekauft wurde
+    wait(1.0)
+    if not animal.Parent then
+        boughtAnimals[animalName] = true
+        currentTarget = nil
+        hasHeldE = false
+        statusLabel.Text = "✅ BOUGHT: " .. animalName .. "!\nSearching for next target..."
+        print("🎉 ERFOLG: " .. animalName .. " gekauft!")
+        return true
+    else
+        statusLabel.Text = "❌ Kauf fehlgeschlagen\nTier noch da: " .. animalName
+        print("🔄 " .. animalName .. " noch nicht gekauft")
+        return false
+    end
+end
+
+-- Farming Loop - FINALE VERSION (NUR EINMAL E HALTEN)
+local function startFarming()
+    if connection then connection:Disconnect() end
+    
+    connection = RunService.Heartbeat:Connect(function()
+        if not isFarming then return end
+        
+        -- Wenn kein aktuelles Target, suche ein neues
+        if not currentTarget then
+            local animal, animalName = findAnyTarget()
+            if animal then
+                currentTarget = animal
+                hasHeldE = false
+                statusLabel.Text = "Moving to: " .. animalName .. "\nWill hold E once when <2 studs"
+                print("🎯 Neues Target: " .. animalName)
+            else
+                statusLabel.Text = "No " .. targetRarity .. " animals found!"
+                humanoid:MoveTo(character.PrimaryPart.Position)
+                return
+            end
+        end
+        
+        -- Bewege zum aktuellen Target
+        if currentTarget and currentTarget.Parent then
+            local distance = getDistanceToAnimal(currentTarget)
+            
+            -- IMMER zum Tier laufen
+            moveToAnimal(currentTarget)
+            
+            -- E EINMAL HALTEN WENN DISTANZ < 2 STUDS UND NOCH NICHT GEMACHT
+            if distance < 2 and not hasHeldE then
+                statusLabel.Text = "🔄 HOLDING E ONCE: " .. currentTarget.Name .. "\nDistance: " .. string.format("%.1f", distance) .. " studs"
+                print("🚀 HALTE E EINMAL für: " .. currentTarget.Name)
+                
+                -- Setze Flag damit wir es nur einmal machen
+                hasHeldE = true
+                
+                -- Starte den E-Hold in einem separaten Thread
+                spawn(function()
+                    tryBuy(currentTarget, currentTarget.Name)
+                end)
+            elseif distance < 2 and hasHeldE then
+                -- Warten auf Kauf
+                statusLabel.Text = "⏳ Waiting for purchase: " .. currentTarget.Name .. "\nDistance: " .. string.format("%.1f", distance) .. " studs"
+            else
+                -- Zu weit weg
+                statusLabel.Text = "Chasing: " .. currentTarget.Name .. "\nDistance: " .. string.format("%.1f", distance) .. " studs"
+            end
+        else
+            -- Target existiert nicht mehr (wurde gekauft)
+            if currentTarget then
+                boughtAnimals[currentTarget.Name] = true
+                print("🎉 Tier gekauft: " .. currentTarget.Name)
+            end
+            currentTarget = nil
+            hasHeldE = false
+            statusLabel.Text = "Target bought!\nSearching for new target..."
+        end
+    end)
+end
+
+-- Start/Stop Farming
+toggleButton.MouseButton1Click:Connect(function()
+    isFarming = not isFarming
+    
+    if isFarming then
+        toggleButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+        toggleButton.Text = "STOP FARMING"
+        statusLabel.Text = "Searching for " .. targetRarity
+        currentTarget = nil
+        boughtAnimals = {}
+        hasHeldE = false
+        print("🚀 STARTE FARMING FÜR: " .. targetRarity)
+        startFarming()
+    else
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        toggleButton.Text = "START FARMING"
+        statusLabel.Text = "Stopped"
+        hasHeldE = false
+        if connection then
+            connection:Disconnect()
+        end
+        humanoid:MoveTo(character.PrimaryPart.Position)
+        print("⏹️ FARMING GESTOPPT")
+    end
+end)
+
+-- Character respawn handling
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
+    humanoid = character:WaitForChild("Humanoid")
+    print("♻️ Character respawned")
+end)
+
+print("=== BRAINROT FARMER GELADEN ===")
+print("🎮 FINALE VERSION - E WIRD NUR EINMAL GEHALTEN")
+print("⏱️  1 SEKUNDE E GEDRÜCKT HALTEN → WARTEN → NÄCHSTES TIER")
+print("✅ EINFACH UND EFFEKTIV")
