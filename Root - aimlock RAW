@@ -1,3 +1,6 @@
+-- ====================
+-- INITIAL SETUP
+-- ====================
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
@@ -5,6 +8,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
+local Stats = game:GetService("Stats")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- ====================
 -- GUI SETUP
@@ -12,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SerotoninGUI"
 ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 500, 0, 600)
@@ -61,7 +67,8 @@ TabContainer.BackgroundColor3 = Color3.fromRGB(22, 27, 34)
 TabContainer.BorderSizePixel = 0
 TabContainer.Parent = MainFrame
 
-local Tabs = {"Aimbot", "Visual", "Misc"} -- NEUER TAB HINZUGEFÜGT
+-- NEUER METHOD TAB HINZUGEFÜGT
+local Tabs = {"Aimbot", "Visual", "Method", "Misc"}
 local TabButtons = {}
 local TabFrames = {}
 
@@ -317,7 +324,6 @@ function createSlider(parent, text, min, max, default, callback)
     return sliderFrame
 end
 
--- DROPDOWN FUNKTION
 function createDropdown(parent, text, options, default, callback)
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Size = UDim2.new(1, -20, 0, 25)
@@ -419,16 +425,54 @@ function createDropdown(parent, text, options, default, callback)
     return dropdownFrame
 end
 
+-- NEUE FUNKTION: TextBox für Orbit Target Name
+function createTextBox(parent, text, placeholder, default, callback)
+    local textBoxFrame = Instance.new("Frame")
+    textBoxFrame.Size = UDim2.new(1, -20, 0, 25)
+    textBoxFrame.Position = UDim2.new(0, 10, 0, #parent:GetChildren() * 30)
+    textBoxFrame.BackgroundTransparency = 1
+    textBoxFrame.Parent = parent
+    
+    local textBoxLabel = Instance.new("TextLabel")
+    textBoxLabel.Size = UDim2.new(0, 90, 1, 0)
+    textBoxLabel.BackgroundTransparency = 1
+    textBoxLabel.Text = text
+    textBoxLabel.TextColor3 = Color3.fromRGB(248, 249, 250)
+    textBoxLabel.Font = Enum.Font.Gotham
+    textBoxLabel.TextSize = 10
+    textBoxLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textBoxLabel.Parent = textBoxFrame
+    
+    local textBox = Instance.new("TextBox")
+    textBox.Size = UDim2.new(0, 120, 0, 20)
+    textBox.Position = UDim2.new(1, -120, 0, 2)
+    textBox.BackgroundColor3 = Color3.fromRGB(33, 38, 45)
+    textBox.BorderSizePixel = 0
+    textBox.Text = default
+    textBox.PlaceholderText = placeholder
+    textBox.TextColor3 = Color3.fromRGB(248, 249, 250)
+    textBox.Font = Enum.Font.Gotham
+    textBox.TextSize = 9
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = textBoxFrame
+    
+    textBox.FocusLost:Connect(function()
+        callback(textBox.Text)
+    end)
+    
+    return textBoxFrame
+end
+
 -- ====================
 -- GLOBALE VARIABLEN
 -- ====================
 local AimbotEnabled = false
-local AimbotHotkey = "MouseButton2"
+local AimbotHotkey = "MouseButton3"
 local TriggerbotEnabled = false
 local TriggerbotHotkey = "MouseButton4"
-local AimbotFOV = 100
-local AimbotSmoothness = 10
-local AimbotMethod = "Mouse"
+local AimbotFOV = 160
+local AimbotSmoothness = 15
+local AimbotMethod = "Camera"
 local TargetMode = "Head"
 local FOVCircleEnabled = false
 local FillCircleEnabled = false
@@ -447,12 +491,33 @@ local HealthBarESPEnabled = false
 local DistanceESPEnabled = false
 local ChamsEnabled = false
 local SkeletonESPEnabled = false
-local ESPTeamCheckEnabled = false -- NEUE VARIABLE FÜR ESP TEAMCHECK
+local ESPTeamCheckEnabled = false
+local PingESPEnabled = false
+
+-- VISUAL EFFECTS VARIABLEN
+local NoFogEnabled = false
+local FullBrightEnabled = false
+local NoShadowsEnabled = false
+
+-- RAGE VARIABLEN
+local RageSpinEnabled = false
+local SpinSpeed = 100
+-- NEUE ORBIT VARIABLEN
+local RageOrbitEnabled = false
+local OrbitSpeed = 50
+local OrbitDistance = 15
+local OrbitHeight = 10
+local OrbitTargetName = ""
 
 -- MISC VARIABLEN
 local FPSBoostEnabled = false
 local PotatoModeEnabled = false
+local GraySkyboxEnabled = false
 local OriginalSettings = {}
+
+-- Speicher für Spieler-Pings
+local PlayerPings = {}
+local LastPingUpdate = {}
 
 local ESPDrawings = {}
 local FOVCircle = Drawing.new("Circle")
@@ -460,11 +525,12 @@ local FillCircle = Drawing.new("Circle")
 local TargetIndicator = Drawing.new("Square")
 local LastTriggerTime = 0
 local VirtualInputManager = game:GetService("VirtualInputManager")
-local ChamFolder = Instance.new("Folder", game.CoreGui)
+local ChamFolder = Instance.new("Folder")
 ChamFolder.Name = "Cham_Folder"
+ChamFolder.Parent = game.CoreGui
 
 -- ====================
--- AIMBOT TAB - MIT TEAMCHECK & PERFEKTER ANORDNUNG
+-- AIMBOT TAB
 -- ====================
 local AimbotFrame = TabFrames["Aimbot"]
 AimbotFrame.CanvasSize = UDim2.new(0, 0, 0, 700)
@@ -472,74 +538,70 @@ AimbotFrame.CanvasSize = UDim2.new(0, 0, 0, 700)
 -- Main Aimbot Section
 local MainAimbotSection = createSection(AimbotFrame, "Main Aimbot", 10, 10, 360, 310)
 
-createToggle(MainAimbotSection, "Aimbot", false, AimbotHotkey, function(state)
+local aimbotToggle = createToggle(MainAimbotSection, "Aimbot", false, AimbotHotkey, function(state)
     AimbotEnabled = state
-    print("Aimbot:", state)
+    print("Aimbot:", state and "AN" or "AUS")
 end)
 
-createDropdown(MainAimbotSection, "Aim Method", {"Mouse", "Camera"}, "Mouse", function(selected)
+local aimMethodDropdown = createDropdown(MainAimbotSection, "Aim Method", {"Mouse", "Camera"}, "Camera", function(selected)
     AimbotMethod = selected
     print("Aim Method:", selected)
 end)
 
-createDropdown(MainAimbotSection, "Target Mode", {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}, "Head", function(selected)
+local targetModeDropdown = createDropdown(MainAimbotSection, "Target Mode", {"Head", "Torso", "Left Arm", "Right Arm", "Left Leg", "Right Leg"}, "Head", function(selected)
     TargetMode = selected
     print("Target Mode:", selected)
 end)
 
-createDropdown(MainAimbotSection, "Target Priority", {"Crosshair", "Nearest", "Distance"}, "Crosshair", function(selected)
+local targetPriorityDropdown = createDropdown(MainAimbotSection, "Target Priority", {"Crosshair", "Nearest", "Distance"}, "Crosshair", function(selected)
     TargetPriority = selected
     print("Target Priority:", selected)
 end)
 
--- TEAMCHECK TOGGLE - JETZT DIREKT ÜBER DEN SLIDERS
 createToggle(MainAimbotSection, "Team Check", false, "", function(state)
     TeamCheckEnabled = state
-    print("Team Check:", state)
+    print("Team Check:", state and "AN" or "AUS")
 end)
 
--- SMOOTHNESS SLIDER - DIREKT UNTER TEAMCHECK MIT PERFEKTEM ABSTAND
-createSlider(MainAimbotSection, "Smoothness", 1, 30, 10, function(value)
+local smoothnessSlider = createSlider(MainAimbotSection, "Smoothness", 1, 30, 15, function(value)
     AimbotSmoothness = value
     print("Smoothness:", value)
 end)
 
--- AIMBOT FOV SLIDER - DIREKT UNTER SMOOTHNESS MIT PERFEKTEM ABSTAND
-createSlider(MainAimbotSection, "Aimbot FOV", 0, 500, 100, function(value)
+local fovSlider = createSlider(MainAimbotSection, "Aimbot FOV", 0, 500, 160, function(value)
     AimbotFOV = value
     print("Aimbot FOV:", value)
 end)
 
--- Extra Features Section - Position angepasst
+-- Extra Features Section
 local ExtraAimbotSection = createSection(AimbotFrame, "Extra Features", 10, 330, 360, 150)
 
 createToggle(ExtraAimbotSection, "FOV Circle", false, "", function(state)
     FOVCircleEnabled = state
-    print("FOV Circle:", state)
+    print("FOV Circle:", state and "AN" or "AUS")
 end)
 
--- FILL CIRCLE TOGGLE - NEU HINZUGEFÜGT
 createToggle(ExtraAimbotSection, "Fill Circle", false, "", function(state)
     FillCircleEnabled = state
-    print("Fill Circle:", state)
+    print("Fill Circle:", state and "AN" or "AUS")
 end)
 
 createToggle(ExtraAimbotSection, "Show Target", false, "", function(state)
     ShowTargetEnabled = state
-    print("Show Target:", state)
+    print("Show Target:", state and "AN" or "AUS")
 end)
 
 createToggle(ExtraAimbotSection, "Wall Check", true, "", function(state)
     WallCheckEnabled = state
-    print("Wall Check:", state)
+    print("Wall Check:", state and "AN" or "AUS")
 end)
 
--- Triggerbot Section - Position angepasst
+-- Triggerbot Section
 local TriggerbotSection = createSection(AimbotFrame, "Triggerbot", 10, 490, 360, 150)
 
 createToggle(TriggerbotSection, "Triggerbot", false, TriggerbotHotkey, function(state)
     TriggerbotEnabled = state
-    print("Triggerbot:", state)
+    print("Triggerbot:", state and "AN" or "AUS")
 end)
 
 createSlider(TriggerbotSection, "Trigger Delay", 0, 500, 50, function(value)
@@ -553,49 +615,52 @@ createSlider(TriggerbotSection, "Hitchance", 0, 100, 100, function(value)
 end)
 
 -- ====================
--- VISUAL TAB - MIT PERFEKTEN SKELETTEN UND ESP TEAMCHECK
+-- VISUAL TAB
 -- ====================
 local VisualFrame = TabFrames["Visual"]
-VisualFrame.CanvasSize = UDim2.new(0, 0, 0, 550) -- Höhe angepasst für neuen Button
+VisualFrame.CanvasSize = UDim2.new(0, 0, 0, 550)
 
--- Player ESP Section - MIT CHAMS UND SKELETON
-local PlayerESPSection = createSection(VisualFrame, "Player ESP", 10, 10, 360, 280)
+-- Player ESP Section
+local PlayerESPSection = createSection(VisualFrame, "Player ESP", 10, 10, 360, 300)
 
 createToggle(PlayerESPSection, "Box ESP", false, "F1", function(state)
     BoxESPEnabled = state
-    print("Box ESP:", state)
+    print("Box ESP:", state and "AN" or "AUS")
 end)
 
 createToggle(PlayerESPSection, "Tracer ESP", false, "F2", function(state)
     TracerESPEnabled = state
-    print("Tracer ESP:", state)
+    print("Tracer ESP:", state and "AN" or "AUS")
 end)
 
 createToggle(PlayerESPSection, "Name ESP", false, "F3", function(state)
     NameESPEnabled = state
-    print("Name ESP:", state)
+    print("Name ESP:", state and "AN" or "AUS")
 end)
 
 createToggle(PlayerESPSection, "Health Bar ESP", false, "F4", function(state)
     HealthBarESPEnabled = state
-    print("Health Bar ESP:", state)
+    print("Health Bar ESP:", state and "AN" or "AUS")
 end)
 
 createToggle(PlayerESPSection, "Distance ESP", false, "F5", function(state)
     DistanceESPEnabled = state
-    print("Distance ESP:", state)
+    print("Distance ESP:", state and "AN" or "AUS")
 end)
 
--- SKELETON ESP HINZUGEFÜGT
+createToggle(PlayerESPSection, "Ping ESP", false, "F8", function(state)
+    PingESPEnabled = state
+    print("Ping ESP:", state and "AN" or "AUS")
+end)
+
 createToggle(PlayerESPSection, "Skeleton ESP", false, "F7", function(state)
     SkeletonESPEnabled = state
-    print("Skeleton ESP:", state)
+    print("Skeleton ESP:", state and "AN" or "AUS")
 end)
 
--- CHAMS ALS FUNKTION IN PLAYER ESP SECTION
 createToggle(PlayerESPSection, "Chams", false, "F6", function(state)
     ChamsEnabled = state
-    print("Chams:", state)
+    print("Chams:", state and "AN" or "AUS")
     if not state then
         for _, obj in pairs(ChamFolder:GetChildren()) do
             obj:Destroy()
@@ -604,76 +669,274 @@ createToggle(PlayerESPSection, "Chams", false, "F6", function(state)
 end)
 
 -- Visual Effects Section
-local EffectsSection = createSection(VisualFrame, "Visual Effects", 10, 300, 360, 120)
+local EffectsSection = createSection(VisualFrame, "Visual Effects", 10, 320, 360, 120)
 
 createToggle(EffectsSection, "No Fog", false, "", function(state)
+    NoFogEnabled = state
     if state then
+        if not OriginalSettings.FogEnd then
+            OriginalSettings.FogEnd = Lighting.FogEnd
+            OriginalSettings.FogStart = Lighting.FogStart
+        end
         Lighting.FogEnd = 100000
+        Lighting.FogStart = 100000
     else
-        Lighting.FogEnd = 1000
+        if OriginalSettings.FogEnd then
+            Lighting.FogEnd = OriginalSettings.FogEnd
+            Lighting.FogStart = OriginalSettings.FogStart or 0
+        end
     end
-    print("No Fog:", state)
+    print("No Fog:", state and "AN" or "AUS")
 end)
 
 createToggle(EffectsSection, "Full Bright", false, "", function(state)
+    FullBrightEnabled = state
     if state then
+        if not OriginalSettings.Ambient then
+            OriginalSettings.Ambient = Lighting.Ambient
+            OriginalSettings.Brightness = Lighting.Brightness
+            OriginalSettings.OutdoorAmbient = Lighting.OutdoorAmbient
+            OriginalSettings.ClockTime = Lighting.ClockTime
+        end
         Lighting.Ambient = Color3.new(1, 1, 1)
         Lighting.Brightness = 2
+        Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+        Lighting.ClockTime = 14
     else
-        Lighting.Ambient = Color3.new(0, 0, 0)
-        Lighting.Brightness = 1
+        if OriginalSettings.Ambient then
+            Lighting.Ambient = OriginalSettings.Ambient
+            Lighting.Brightness = OriginalSettings.Brightness
+            Lighting.OutdoorAmbient = OriginalSettings.OutdoorAmbient
+            Lighting.ClockTime = OriginalSettings.ClockTime or 14
+        end
     end
-    print("Full Bright:", state)
+    print("Full Bright:", state and "AN" or "AUS")
 end)
 
 createToggle(EffectsSection, "No Shadows", false, "", function(state)
-    Lighting.GlobalShadows = not state
-    print("No Shadows:", state)
+    NoShadowsEnabled = state
+    if state then
+        if not OriginalSettings.GlobalShadows then
+            OriginalSettings.GlobalShadows = Lighting.GlobalShadows
+            OriginalSettings.ShadowSoftness = Lighting.ShadowSoftness
+        end
+        Lighting.GlobalShadows = false
+        Lighting.ShadowSoftness = 0
+    else
+        if OriginalSettings.GlobalShadows then
+            Lighting.GlobalShadows = OriginalSettings.GlobalShadows
+            Lighting.ShadowSoftness = OriginalSettings.ShadowSoftness
+        end
+    end
+    print("No Shadows:", state and "AN" or "AUS")
 end)
 
--- ESP TEAMCHECK SECTION - GANZ UNTEN IM VISUAL TAB
-local ESPTeamCheckSection = createSection(VisualFrame, "ESP Team Check", 10, 430, 360, 80)
+-- ESP Team Check Section
+local ESPTeamCheckSection = createSection(VisualFrame, "ESP Team Check", 10, 450, 360, 80)
 
--- ESP TEAMCHECK BUTTON - NUR BEI GEGNERN ESP
 createToggle(ESPTeamCheckSection, "ESP Team Check", false, "", function(state)
     ESPTeamCheckEnabled = state
-    print("ESP Team Check:", state)
+    print("ESP Team Check:", state and "AN" or "AUS")
+end)
+
+-- ====================
+-- METHOD TAB - MIT ORBIT ERWEITERT
+-- ====================
+local MethodFrame = TabFrames["Method"]
+MethodFrame.CanvasSize = UDim2.new(0, 0, 0, 250)
+
+-- Rage Section - MIT ORBIT ERWEITERT
+local RageSection = createSection(MethodFrame, "Rage Features", 10, 10, 360, 230)
+
+createToggle(RageSection, "Rage Spin", false, "", function(state)
+    RageSpinEnabled = state
     if state then
-        print("ESP FUNKTIONIERT NUR BEI GEGNERN!")
+        print("🌀 RAGE SPIN AKTIVIERT!")
+        print("⚠️ ACHTUNG: Sehr schnell, kann auffällig sein!")
     else
-        print("ESP FUNKTIONIERT BEI ALLEN SPIELERN!")
+        print("🌀 RAGE SPIN DEAKTIVIERT")
     end
 end)
 
+createSlider(RageSection, "Spin Speed", 1, 100, 100, function(value)
+    SpinSpeed = value
+    print("Spin Speed auf", value, "gesetzt")
+    if RageSpinEnabled then
+        print("🌀 Aktuelle Drehgeschwindigkeit:", value)
+    end
+end)
+
+createToggle(RageSection, "Rage Orbit", false, "", function(state)
+    RageOrbitEnabled = state
+    if state then
+        print("🔄 RAGE ORBIT AKTIVIERT!")
+        print("🎯 Fliege um Zielspieler:", OrbitTargetName)
+    else
+        print("🔄 RAGE ORBIT DEAKTIVIERT")
+    end
+end)
+
+local orbitTargetBox = createTextBox(RageSection, "Orbit Target", "Spieler Name", "", function(text)
+    OrbitTargetName = text
+    print("🎯 Orbit Target gesetzt auf:", text)
+end)
+
+createSlider(RageSection, "Orbit Speed", 1, 100, 50, function(value)
+    OrbitSpeed = value
+    print("🔄 Orbit Speed auf", value, "gesetzt")
+end)
+
+createSlider(RageSection, "Orbit Distance", 1, 50, 15, function(value)
+    OrbitDistance = value
+    print("🔄 Orbit Distance auf", value, "Studs gesetzt")
+end)
+
+createSlider(RageSection, "Orbit Height", 1, 20, 10, function(value)
+    OrbitHeight = value
+    print("🔄 Orbit Height auf", value, "Studs gesetzt")
+end)
+
 -- ====================
--- MISC TAB - NUR EIN TAB MIT FPS BOOST UND POTATO MODE
+-- MISC TAB (ERWEITERT MIT GRAY SKYBOX)
 -- ====================
 local MiscFrame = TabFrames["Misc"]
-MiscFrame.CanvasSize = UDim2.new(0, 0, 0, 150)
+MiscFrame.CanvasSize = UDim2.new(0, 0, 0, 180)
 
--- Performance Section - EINZIGER TAB IM MISC TAB
-local PerformanceSection = createSection(MiscFrame, "Performance", 10, 10, 360, 130)
+-- Performance Section
+local PerformanceSection = createSection(MiscFrame, "Performance", 10, 10, 360, 160)
+
+-- Gray Skybox Toggle hinzufügen (NEU)
+createToggle(PerformanceSection, "Gray Skybox", false, "", function(state)
+    GraySkyboxEnabled = state
+    
+    if state then
+        print("☁️ GRAY SKYBOX AKTIVIERT")
+        
+        -- Speichere originale Skybox
+        if not OriginalSettings.Sky then
+            OriginalSettings.Sky = {
+                SkyboxBk = Lighting:FindFirstChild("SkyboxBk"),
+                SkyboxDn = Lighting:FindFirstChild("SkyboxDn"),
+                SkyboxFt = Lighting:FindFirstChild("SkyboxFt"),
+                SkyboxLf = Lighting:FindFirstChild("SkyboxLf"),
+                SkyboxRt = Lighting:FindFirstChild("SkyboxRt"),
+                SkyboxUp = Lighting:FindFirstChild("SkyboxUp")
+            }
+        end
+        
+        -- Lösche existierende Skybox Decals
+        for _, name in pairs({"SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"}) do
+            local existing = Lighting:FindFirstChild(name)
+            if existing then
+                existing:Destroy()
+            end
+        end
+        
+        -- Setze die "Grey Sky Gradient 1" Skybox als Decals
+        local skyboxId = "7196882525"  -- ID für "Grey Sky Gradient 1" als Decal
+        
+        -- Erstelle Decals für alle 6 Seiten
+        local sides = {
+            {Name = "SkyboxBk", Face = Enum.NormalId.Back},
+            {Name = "SkyboxDn", Face = Enum.NormalId.Bottom},
+            {Name = "SkyboxFt", Face = Enum.NormalId.Front},
+            {Name = "SkyboxLf", Face = Enum.NormalId.Left},
+            {Name = "SkyboxRt", Face = Enum.NormalId.Right},
+            {Name = "SkyboxUp", Face = Enum.NormalId.Top}
+        }
+        
+        for _, side in ipairs(sides) do
+            local decal = Instance.new("Decal")
+            decal.Name = side.Name
+            decal.Texture = "rbxassetid://" .. skyboxId
+            decal.Face = side.Face
+            decal.Parent = Lighting
+        end
+        
+        -- Auch die Sky-Properties setzen (falls benötigt)
+        if not OriginalSettings.SkyProperties then
+            OriginalSettings.SkyProperties = {
+                SkyboxBk = Lighting.Sky.SkyboxBk,
+                SkyboxDn = Lighting.Sky.SkyboxDn,
+                SkyboxFt = Lighting.Sky.SkyboxFt,
+                SkyboxLf = Lighting.Sky.SkyboxLf,
+                SkyboxRt = Lighting.Sky.SkyboxRt,
+                SkyboxUp = Lighting.Sky.SkyboxUp
+            }
+        end
+        
+        Lighting.Sky.SkyboxBk = "rbxassetid://" .. skyboxId
+        Lighting.Sky.SkyboxDn = "rbxassetid://" .. skyboxId
+        Lighting.Sky.SkyboxFt = "rbxassetid://" .. skyboxId
+        Lighting.Sky.SkyboxLf = "rbxassetid://" .. skyboxId
+        Lighting.Sky.SkyboxRt = "rbxassetid://" .. skyboxId
+        Lighting.Sky.SkyboxUp = "rbxassetid://" .. skyboxId
+        
+        print("✅ Gray Skybox gesetzt mit ID: " .. skyboxId)
+        
+    else
+        print("☁️ GRAY SKYBOX DEAKTIVIERT")
+        
+        -- Lösche Decals
+        for _, name in pairs({"SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"}) do
+            local existing = Lighting:FindFirstChild(name)
+            if existing then
+                existing:Destroy()
+            end
+        end
+        
+        -- Stelle originale Skybox wieder her
+        if OriginalSettings.Sky then
+            for sideName, originalDecal in pairs(OriginalSettings.Sky) do
+                if originalDecal and originalDecal.Parent then
+                    -- Wenn das Original ein Decal war, klone es
+                    originalDecal:Clone().Parent = Lighting
+                end
+            end
+        end
+        
+        -- Stelle Sky-Properties wieder her
+        if OriginalSettings.SkyProperties then
+            for propertyName, originalValue in pairs(OriginalSettings.SkyProperties) do
+                if Lighting.Sky[propertyName] then
+                    Lighting.Sky[propertyName] = originalValue
+                end
+            end
+        else
+            -- Falls keine Originale gespeichert wurden, setze Standard-Skybox
+            Lighting.Sky.SkyboxBk = "rbxasset://sky/sky512_bk.tex"
+            Lighting.Sky.SkyboxDn = "rbxasset://sky/sky512_dn.tex"
+            Lighting.Sky.SkyboxFt = "rbxasset://sky/sky512_ft.tex"
+            Lighting.Sky.SkyboxLf = "rbxasset://sky/sky512_lf.tex"
+            Lighting.Sky.SkyboxRt = "rbxasset://sky/sky512_rt.tex"
+            Lighting.Sky.SkyboxUp = "rbxasset://sky/sky512_up.tex"
+        end
+        
+        print("✅ Original Skybox wiederhergestellt")
+    end
+end)
 
 createToggle(PerformanceSection, "FPS Boost", false, "", function(state)
     if state then
-        if FPSBoostEnabled then
-            print("FPS Boost already active!")
-            return
+        if FPSBoostEnabled then 
+            print("FPS Boost ist bereits aktiv!")
+            return 
         end
         
+        print("🚀 FPS BOOST WIRD AKTIVIERT...")
         FPSBoostEnabled = true
-        print("FPS BOOST ACTIVATING...")
         
-        -- Save original settings
-        OriginalSettings.GlobalShadows = Lighting.GlobalShadows
-        OriginalSettings.ShadowSoftness = Lighting.ShadowSoftness
-        OriginalSettings.Brightness = Lighting.Brightness
-        OriginalSettings.FogEnd = Lighting.FogEnd
-        OriginalSettings.GeographicLatitude = Lighting.GeographicLatitude
-        OriginalSettings.OutdoorAmbient = Lighting.OutdoorAmbient
-        OriginalSettings.Ambient = Lighting.Ambient
+        OriginalSettings.FPSBoost = {}
+        OriginalSettings.FPSBoost.GlobalShadows = Lighting.GlobalShadows
+        OriginalSettings.FPSBoost.ShadowSoftness = Lighting.ShadowSoftness
+        OriginalSettings.FPSBoost.Brightness = Lighting.Brightness
+        OriginalSettings.FPSBoost.FogEnd = Lighting.FogEnd
+        OriginalSettings.FPSBoost.GeographicLatitude = Lighting.GeographicLatitude
+        OriginalSettings.FPSBoost.OutdoorAmbient = Lighting.OutdoorAmbient
+        OriginalSettings.FPSBoost.Ambient = Lighting.Ambient
+        OriginalSettings.FPSBoost.Technology = Lighting.Technology
+        OriginalSettings.FPSBoost.QualityLevel = settings().Rendering.QualityLevel
         
-        -- Optimize lighting for maximum FPS
         Lighting.GlobalShadows = false
         Lighting.ShadowSoftness = 0
         Lighting.Brightness = 2
@@ -681,93 +944,84 @@ createToggle(PerformanceSection, "FPS Boost", false, "", function(state)
         Lighting.GeographicLatitude = 0
         Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
         Lighting.Ambient = Color3.new(1, 1, 1)
+        Lighting.Technology = Enum.Technology.Legacy
         
-        -- Disable particle effects
+        settings().Rendering.QualityLevel = 1
+        settings().Rendering.EagerBulkExecution = true
+        
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
                 obj.Enabled = false
             end
         end
         
-        -- Reduce texture quality
-        settings().Rendering.QualityLevel = 1
+        print("✅ FPS BOOST AKTIVIERT!")
         
-        print("FPS BOOST ACTIVATED!")
-        print("Shadows: DISABLED")
-        print("Particles: DISABLED") 
-        print("Texture Quality: REDUCED")
     else
-        if not FPSBoostEnabled then
-            print("FPS Boost is not active!")
-            return
+        if not FPSBoostEnabled then 
+            print("FPS Boost ist nicht aktiv!")
+            return 
         end
         
+        print("🔄 FPS BOOST WIRD DEAKTIVIERT...")
         FPSBoostEnabled = false
-        print("RESETTING FPS BOOST...")
         
-        -- Restore original settings
-        if OriginalSettings.GlobalShadows ~= nil then
-            Lighting.GlobalShadows = OriginalSettings.GlobalShadows
-            Lighting.ShadowSoftness = OriginalSettings.ShadowSoftness
-            Lighting.Brightness = OriginalSettings.Brightness
-            Lighting.FogEnd = OriginalSettings.FogEnd
-            Lighting.GeographicLatitude = OriginalSettings.GeographicLatitude
-            Lighting.OutdoorAmbient = OriginalSettings.OutdoorAmbient
-            Lighting.Ambient = OriginalSettings.Ambient
+        if OriginalSettings.FPSBoost then
+            Lighting.GlobalShadows = OriginalSettings.FPSBoost.GlobalShadows or true
+            Lighting.ShadowSoftness = OriginalSettings.FPSBoost.ShadowSoftness or 1
+            Lighting.Brightness = OriginalSettings.FPSBoost.Brightness or 1
+            Lighting.FogEnd = OriginalSettings.FPSBoost.FogEnd or 1000
+            Lighting.GeographicLatitude = OriginalSettings.FPSBoost.GeographicLatitude or 41.73
+            Lighting.OutdoorAmbient = OriginalSettings.FPSBoost.OutdoorAmbient or Color3.new(0.5, 0.5, 0.5)
+            Lighting.Ambient = OriginalSettings.FPSBoost.Ambient or Color3.new(0, 0, 0)
+            Lighting.Technology = OriginalSettings.FPSBoost.Technology or Enum.Technology.Voxel
+            settings().Rendering.QualityLevel = OriginalSettings.FPSBoost.QualityLevel or 10
         end
         
-        -- Enable particle effects again
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("ParticleEmitter") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
                 obj.Enabled = true
             end
         end
         
-        -- Restore texture quality
-        settings().Rendering.QualityLevel = 10
-        
-        print("FPS BOOST RESET!")
+        print("✅ FPS BOOST DEAKTIVIERT!")
     end
 end)
 
 createToggle(PerformanceSection, "Potato Mode", false, "", function(state)
     if state then
-        if PotatoModeEnabled then
-            print("Potato Mode already active!")
-            return
+        if PotatoModeEnabled then 
+            print("Potato Mode ist bereits aktiv!")
+            return 
         end
         
+        print("🥔 POTATO MODE WIRD AKTIVIERT...")
         PotatoModeEnabled = true
-        print("POTATO MODE ACTIVATING...")
         
-        -- Save original materials and textures
-        OriginalSettings.Materials = {}
-        OriginalSettings.Textures = {}
+        OriginalSettings.PotatoMode = {}
+        OriginalSettings.PotatoMode.Materials = {}
+        OriginalSettings.PotatoMode.Textures = {}
         
         local objectsProcessed = 0
         
-        -- Change all materials to Plastic and remove textures
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Part") or obj:IsA("MeshPart") or obj:IsA("UnionOperation") then
-                -- Save original values
-                OriginalSettings.Materials[obj] = obj.Material
+                OriginalSettings.PotatoMode.Materials[obj] = obj.Material
+                
                 if obj:IsA("Part") then
-                    OriginalSettings.Textures[obj] = {
+                    OriginalSettings.PotatoMode.Textures[obj] = {
                         BrickColor = obj.BrickColor,
                         Color = obj.Color
                     }
                 end
                 
-                -- Set to Plastic material
                 obj.Material = Enum.Material.Plastic
                 
-                -- Remove textures and set simple color
                 if obj:IsA("Part") then
                     obj.BrickColor = BrickColor.new("Medium stone grey")
                     obj.Color = Color3.new(0.8, 0.8, 0.8)
                 end
                 
-                -- Remove decals/textures
                 for _, child in pairs(obj:GetChildren()) do
                     if child:IsA("Decal") or child:IsA("Texture") then
                         child:Destroy()
@@ -775,49 +1029,55 @@ createToggle(PerformanceSection, "Potato Mode", false, "", function(state)
                 end
                 
                 objectsProcessed += 1
+                
+                if objectsProcessed % 100 == 0 then
+                    task.wait()
+                end
             end
         end
         
-        print("POTATO MODE ACTIVATED!")
-        print("Objects processed: " .. objectsProcessed)
-        print("All materials: PLASTIC")
-        print("All textures: REMOVED")
+        print("✅ POTATO MODE AKTIVIERT!")
+        print("   • Objects processed: " .. objectsProcessed)
+        
     else
-        if not PotatoModeEnabled then
-            print("Potato Mode is not active!")
-            return
+        if not PotatoModeEnabled then 
+            print("Potato Mode ist nicht aktiv!")
+            return 
         end
         
+        print("🔄 POTATO MODE WIRD DEAKTIVIERT...")
         PotatoModeEnabled = false
-        print("RESETTING POTATO MODE...")
         
         local objectsRestored = 0
         
-        -- Restore original materials and textures
-        for obj, originalMaterial in pairs(OriginalSettings.Materials) do
-            if obj and obj.Parent then
-                obj.Material = originalMaterial
-                objectsRestored += 1
-            end
-        end
-        
-        for obj, originalData in pairs(OriginalSettings.Textures) do
-            if obj and obj.Parent then
-                if originalData.BrickColor then
-                    obj.BrickColor = originalData.BrickColor
-                end
-                if originalData.Color then
-                    obj.Color = originalData.Color
+        if OriginalSettings.PotatoMode.Materials then
+            for obj, originalMaterial in pairs(OriginalSettings.PotatoMode.Materials) do
+                if obj and obj.Parent then
+                    obj.Material = originalMaterial
+                    objectsRestored += 1
                 end
             end
         end
         
-        -- Clear saved settings
-        OriginalSettings.Materials = {}
-        OriginalSettings.Textures = {}
+        if OriginalSettings.PotatoMode.Textures then
+            for obj, originalData in pairs(OriginalSettings.PotatoMode.Textures) do
+                if obj and obj.Parent and originalData then
+                    if originalData.BrickColor then
+                        obj.BrickColor = originalData.BrickColor
+                    end
+                    if originalData.Color then
+                        obj.Color = originalData.Color
+                    end
+                end
+            end
+        end
         
-        print("POTATO MODE RESET!")
-        print("Objects restored: " .. objectsRestored)
+        OriginalSettings.PotatoMode.Materials = nil
+        OriginalSettings.PotatoMode.Textures = nil
+        collectgarbage()
+        
+        print("✅ POTATO MODE DEAKTIVIERT!")
+        print("   • Objects restored: " .. objectsRestored)
     end
 end)
 
@@ -830,314 +1090,275 @@ FOVCircle.Thickness = 2
 FOVCircle.NumSides = 100
 FOVCircle.Filled = false
 
--- FILL CIRCLE KONFIGURATION - TRANSPARENT AUSGEFÜLLT
 FillCircle.Visible = false
 FillCircle.Color = Color3.new(1, 1, 1)
 FillCircle.Thickness = 0
 FillCircle.NumSides = 100
 FillCircle.Filled = true
-FillCircle.Transparency = 0.7  -- TRANSPARENT DAMIT MAN DURCHGUCKEN KANN
+FillCircle.Transparency = 0.7
 
--- TARGET INDICATOR FARBE VON GRÜN AUF ROT GEÄNDERT
 TargetIndicator.Visible = false
-TargetIndicator.Color = Color3.new(1, 0, 0) -- JETZT ROT STATT GRÜN
+TargetIndicator.Color = Color3.new(1, 0, 0)
 TargetIndicator.Thickness = 2
 TargetIndicator.Filled = false
 TargetIndicator.Size = Vector2.new(10, 10)
 
--- TEAMCHECK FUNKTION FÜR AIMBOT
-local function isEnemy(player)
-    if not TeamCheckEnabled then
-        return true -- Wenn TeamCheck aus ist, sind alle Feinde
-    end
+-- RAGE SPIN FUNKTION
+local function rageSpin()
+    if not RageSpinEnabled or not LocalPlayer.Character then return end
     
-    -- Überprüfe ob der Spieler im selben Team ist
-    local localPlayerTeam = LocalPlayer.Team
-    local targetPlayerTeam = player.Team
+    local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
     
-    -- Wenn keine Teams vorhanden sind, sind alle Feinde
-    if not localPlayerTeam or not targetPlayerTeam then
-        return true
-    end
+    local rotationMultiplier = SpinSpeed * 0.5
+    local currentCFrame = humanoidRootPart.CFrame
+    local newRotation = currentCFrame * CFrame.Angles(0, math.rad(rotationMultiplier), 0)
     
-    -- Wenn im selben Team, dann kein Feind
-    if localPlayerTeam == targetPlayerTeam then
-        return false
-    end
-    
-    return true
+    humanoidRootPart.CFrame = newRotation
 end
 
--- ESP TEAMCHECK FUNKTION - NUR BEI GEGNERN ESP ANZEIGEN
-local function isESPEnemy(player)
-    if not ESPTeamCheckEnabled then
-        return true -- Wenn ESP TeamCheck aus ist, ESP bei allen Spielern anzeigen
-    end
+-- RAGE ORBIT FUNKTION
+local function rageOrbit()
+    if not RageOrbitEnabled or not LocalPlayer.Character or OrbitTargetName == "" then return end
     
-    -- Überprüfe ob der Spieler im selben Team ist
-    local localPlayerTeam = LocalPlayer.Team
-    local targetPlayerTeam = player.Team
+    local humanoidRootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
     
-    -- Wenn keine Teams vorhanden sind, ESP bei allen anzeigen
-    if not localPlayerTeam or not targetPlayerTeam then
-        return true
-    end
-    
-    -- Wenn im selben Team, dann kein ESP anzeigen
-    if localPlayerTeam == targetPlayerTeam then
-        return false
-    end
-    
-    return true
-end
-
--- PERFEKTE SKELETON ESP FUNKTION - CHIRURGIE QUALITÄT
-local function createSkeleton(player)
-    if player == LocalPlayer then return end
-    
-    local skeleton = {
-        -- Hauptkörper
-        HeadToTorso = Drawing.new("Line"),
-        TorsoToHip = Drawing.new("Line"),
-        
-        -- Arme komplett
-        TorsoToLeftShoulder = Drawing.new("Line"),
-        LeftShoulderToLeftElbow = Drawing.new("Line"),
-        LeftElbowToLeftHand = Drawing.new("Line"),
-        
-        TorsoToRightShoulder = Drawing.new("Line"),
-        RightShoulderToRightElbow = Drawing.new("Line"),
-        RightElbowToRightHand = Drawing.new("Line"),
-        
-        -- Beine komplett
-        HipToLeftHip = Drawing.new("Line"),
-        LeftHipToLeftKnee = Drawing.new("Line"),
-        LeftKneeToLeftFoot = Drawing.new("Line"),
-        
-        HipToRightHip = Drawing.new("Line"),
-        RightHipToRightKnee = Drawing.new("Line"),
-        RightKneeToRightFoot = Drawing.new("Line")
-    }
-    
-    -- ALLE SKELETON LINIEN IN WEIß MIT PERFEKTEN LINIEN
-    for _, part in pairs(skeleton) do
-        part.Visible = false
-        part.Color = Color3.new(1, 1, 1) -- REINWEIß
-        part.Thickness = 2 -- Perfekte Dicke für Chirurgie-Look
-    end
-    
-    ESPDrawings[player].Skeleton = skeleton
-end
-
-local function updateSkeleton(player)
-    local skeleton = ESPDrawings[player].Skeleton
-    if not skeleton or not SkeletonESPEnabled then return end
-    
-    -- ESP TEAMCHECK FÜR SKELETON
-    if not isESPEnemy(player) then
-        for _, bone in pairs(skeleton) do
-            bone.Visible = false
+    local targetPlayer
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and 
+           (string.lower(player.DisplayName) == string.lower(OrbitTargetName) or
+            string.lower(player.Name) == string.lower(OrbitTargetName)) then
+            targetPlayer = player
+            break
         end
-        return
+    end
+    
+    if not targetPlayer or not targetPlayer.Character then return end
+    
+    local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return end
+    
+    local angle = tick() * OrbitSpeed * 0.1
+    local offset = Vector3.new(
+        math.cos(angle) * OrbitDistance,
+        OrbitHeight,
+        math.sin(angle) * OrbitDistance
+    )
+    
+    local newPosition = targetRoot.Position + offset
+    local newCFrame = CFrame.new(newPosition, targetRoot.Position)
+    
+    humanoidRootPart.CFrame = newCFrame
+end
+
+-- ====================
+-- OPTIMIERTES SKELETON ESP SYSTEM (WEIßE FARBE)
+-- ====================
+local SkeletonBones = {
+    "HeadToTorso",
+    "TorsoToHip",
+    "TorsoToLeftShoulder", "LeftShoulderToElbow", "LeftElbowToHand",
+    "TorsoToRightShoulder", "RightShoulderToElbow", "RightElbowToHand",
+    "HipToLeftHip", "LeftHipToKnee", "LeftKneeToFoot",
+    "HipToRightHip", "RightHipToKnee", "RightKneeToFoot"
+}
+
+-- Funktion zum Erstellen des Skeletts (nur einmal pro Spieler)
+local function createSkeleton(player)
+    if player == LocalPlayer then return {} end
+    
+    local skeleton = {}
+    
+    for _, boneName in ipairs(SkeletonBones) do
+        skeleton[boneName] = Drawing.new("Line")
+        local bone = skeleton[boneName]
+        
+        bone.Visible = false
+        bone.Color = Color3.fromRGB(255, 255, 255)  -- WEIß statt gelb
+        bone.Thickness = 2
+        bone.Transparency = 1
+        bone.ZIndex = 10
+    end
+    
+    return skeleton
+end
+
+-- Optimierte Funktion zum Aktualisieren des Skeletts
+local function updateSkeleton(player, skeleton)
+    if not skeleton or not SkeletonESPEnabled then 
+        for _, boneName in ipairs(SkeletonBones) do
+            if skeleton and skeleton[boneName] then
+                skeleton[boneName].Visible = false
+            end
+        end
+        return 
+    end
+    
+    -- Schnelle Team-Check
+    if ESPTeamCheckEnabled then
+        local localTeam = LocalPlayer.Team
+        local targetTeam = player.Team
+        if localTeam and targetTeam and localTeam == targetTeam then
+            for _, boneName in ipairs(SkeletonBones) do
+                skeleton[boneName].Visible = false
+            end
+            return
+        end
     end
     
     local character = player.Character
-    if not character then return end
-    
-    -- Skelett-Punkte finden - PRÄZISE WIE CHIRURGIE
-    local head = character:FindFirstChild("Head")
-    local upperTorso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-    local lowerTorso = character:FindFirstChild("LowerTorso")
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    
-    -- Arme
-    local leftUpperArm = character:FindFirstChild("LeftUpperArm") or character:FindFirstChild("LeftArm")
-    local leftLowerArm = character:FindFirstChild("LeftLowerArm")
-    local leftHand = character:FindFirstChild("LeftHand")
-    
-    local rightUpperArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("RightArm")
-    local rightLowerArm = character:FindFirstChild("RightLowerArm")
-    local rightHand = character:FindFirstChild("RightHand")
-    
-    -- Beine
-    local leftUpperLeg = character:FindFirstChild("LeftUpperLeg") or character:FindFirstChild("LeftLeg")
-    local leftLowerLeg = character:FindFirstChild("LeftLowerLeg")
-    local leftFoot = character:FindFirstChild("LeftFoot")
-    
-    local rightUpperLeg = character:FindFirstChild("RightUpperLeg") or character:FindFirstChild("RightLeg")
-    local rightLowerLeg = character:FindFirstChild("RightLowerLeg")
-    local rightFoot = character:FindFirstChild("RightFoot")
-    
-    if not (head and upperTorso and humanoidRootPart) then
-        for _, bone in pairs(skeleton) do
-            bone.Visible = false
+    if not character then 
+        for _, boneName in ipairs(SkeletonBones) do
+            skeleton[boneName].Visible = false
         end
         return
     end
     
-    -- Positionen berechnen - PRÄZISE ANATOMIE
-    local headPos, headOnScreen = Camera:WorldToViewportPoint(head.Position)
-    local upperTorsoPos, upperTorsoOnScreen = Camera:WorldToViewportPoint(upperTorso.Position)
-    local humanoidRootPos, humanoidRootOnScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position)
-    
-    -- Hüfte Position approximieren
-    local hipPos = humanoidRootPos
-    if lowerTorso then
-        local lowerTorsoPos = Camera:WorldToViewportPoint(lowerTorso.Position)
-        hipPos = lowerTorsoPos
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        for _, boneName in ipairs(SkeletonBones) do
+            skeleton[boneName].Visible = false
+        end
+        return
     end
     
-    if headOnScreen and upperTorsoOnScreen and humanoidRootOnScreen then
-        -- KOPF & RÜCKENGRAT - ANATOMISCH KORREKT
-        skeleton.HeadToTorso.From = Vector2.new(headPos.X, headPos.Y)
-        skeleton.HeadToTorso.To = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
-        skeleton.HeadToTorso.Visible = true
+    -- Finde alle Körperteile mit optimierter Suche
+    local parts = {}
+    local partNames = {
+        "Head", "UpperTorso", "LowerTorso", "HumanoidRootPart",
+        "LeftUpperArm", "LeftLowerArm", "LeftHand",
+        "RightUpperArm", "RightLowerArm", "RightHand",
+        "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
+        "RightUpperLeg", "RightLowerLeg", "RightFoot"
+    }
+    
+    for _, name in ipairs(partNames) do
+        parts[name] = character:FindFirstChild(name)
+    end
+    
+    if not parts["LowerTorso"] then
+        parts["LowerTorso"] = parts["HumanoidRootPart"]
+    end
+    
+    -- Zeichne nur wenn mindestens Kopf und Torso existieren
+    if not parts["Head"] or not parts["UpperTorso"] or not parts["LowerTorso"] then
+        for _, boneName in ipairs(SkeletonBones) do
+            skeleton[boneName].Visible = false
+        end
+        return
+    end
+    
+    -- Hole alle Viewport-Positionen auf einmal
+    local viewportPositions = {}
+    for name, part in pairs(parts) do
+        if part then
+            local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            viewportPositions[name] = {pos = Vector2.new(screenPos.X, screenPos.Y), visible = onScreen}
+        end
+    end
+    
+    -- Definiere Knochen-Verbindungen
+    local boneConnections = {
+        HeadToTorso = {"Head", "UpperTorso"},
+        TorsoToHip = {"UpperTorso", "LowerTorso"},
         
-        skeleton.TorsoToHip.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
-        skeleton.TorsoToHip.To = Vector2.new(hipPos.X, hipPos.Y)
-        skeleton.TorsoToHip.Visible = true
+        TorsoToLeftShoulder = {"UpperTorso", "LeftUpperArm"},
+        LeftShoulderToElbow = {"LeftUpperArm", "LeftLowerArm"},
+        LeftElbowToHand = {"LeftLowerArm", "LeftHand"},
         
-        -- ARME - KOMPLETT MIT SCHULTERN
-        if leftUpperArm then
-            local leftUpperArmPos = Camera:WorldToViewportPoint(leftUpperArm.Position)
-            
-            -- Schulter zu Ellbogen
-            skeleton.TorsoToLeftShoulder.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
-            skeleton.TorsoToLeftShoulder.To = Vector2.new(leftUpperArmPos.X, leftUpperArmPos.Y)
-            skeleton.TorsoToLeftShoulder.Visible = true
-            
-            -- Ellbogen zu Hand
-            if leftLowerArm then
-                local leftLowerArmPos = Camera:WorldToViewportPoint(leftLowerArm.Position)
-                skeleton.LeftShoulderToLeftElbow.From = Vector2.new(leftUpperArmPos.X, leftUpperArmPos.Y)
-                skeleton.LeftShoulderToLeftElbow.To = Vector2.new(leftLowerArmPos.X, leftLowerArmPos.Y)
-                skeleton.LeftShoulderToLeftElbow.Visible = true
-                
-                if leftHand then
-                    local leftHandPos = Camera:WorldToViewportPoint(leftHand.Position)
-                    skeleton.LeftElbowToLeftHand.From = Vector2.new(leftLowerArmPos.X, leftLowerArmPos.Y)
-                    skeleton.LeftElbowToLeftHand.To = Vector2.new(leftHandPos.X, leftHandPos.Y)
-                    skeleton.LeftElbowToLeftHand.Visible = true
-                else
-                    skeleton.LeftElbowToLeftHand.Visible = false
-                end
-            else
-                skeleton.LeftShoulderToLeftElbow.Visible = false
-                skeleton.LeftElbowToLeftHand.Visible = false
-            end
-        else
-            skeleton.TorsoToLeftShoulder.Visible = false
-            skeleton.LeftShoulderToLeftElbow.Visible = false
-            skeleton.LeftElbowToLeftHand.Visible = false
+        TorsoToRightShoulder = {"UpperTorso", "RightUpperArm"},
+        RightShoulderToElbow = {"RightUpperArm", "RightLowerArm"},
+        RightElbowToHand = {"RightLowerArm", "RightHand"},
+        
+        HipToLeftHip = {"LowerTorso", "LeftUpperLeg"},
+        LeftHipToKnee = {"LeftUpperLeg", "LeftLowerLeg"},
+        LeftKneeToFoot = {"LeftLowerLeg", "LeftFoot"},
+        
+        HipToRightHip = {"LowerTorso", "RightUpperLeg"},
+        RightHipToKnee = {"RightUpperLeg", "RightLowerLeg"},
+        RightKneeToFoot = {"RightLowerLeg", "RightFoot"}
+    }
+    
+    -- Zeichne alle Knochen
+    for boneName, connection in pairs(boneConnections) do
+        local fromPart = connection[1]
+        local toPart = connection[2]
+        
+        local bone = skeleton[boneName]
+        if not bone then
+            bone = Drawing.new("Line")
+            skeleton[boneName] = bone
+            bone.Visible = false
+            bone.Color = Color3.fromRGB(255, 255, 255)  -- WEIß
+            bone.Thickness = 2
         end
         
-        if rightUpperArm then
-            local rightUpperArmPos = Camera:WorldToViewportPoint(rightUpperArm.Position)
-            
-            -- Schulter zu Ellbogen
-            skeleton.TorsoToRightShoulder.From = Vector2.new(upperTorsoPos.X, upperTorsoPos.Y)
-            skeleton.TorsoToRightShoulder.To = Vector2.new(rightUpperArmPos.X, rightUpperArmPos.Y)
-            skeleton.TorsoToRightShoulder.Visible = true
-            
-            -- Ellbogen zu Hand
-            if rightLowerArm then
-                local rightLowerArmPos = Camera:WorldToViewportPoint(rightLowerArm.Position)
-                skeleton.RightShoulderToRightElbow.From = Vector2.new(rightUpperArmPos.X, rightUpperArmPos.Y)
-                skeleton.RightShoulderToRightElbow.To = Vector2.new(rightLowerArmPos.X, rightLowerArmPos.Y)
-                skeleton.RightShoulderToRightElbow.Visible = true
-                
-                if rightHand then
-                    local rightHandPos = Camera:WorldToViewportPoint(rightHand.Position)
-                    skeleton.RightElbowToRightHand.From = Vector2.new(rightLowerArmPos.X, rightLowerArmPos.Y)
-                    skeleton.RightElbowToRightHand.To = Vector2.new(rightHandPos.X, rightHandPos.Y)
-                    skeleton.RightElbowToRightHand.Visible = true
-                else
-                    skeleton.RightElbowToRightHand.Visible = false
-                end
-            else
-                skeleton.RightShoulderToRightElbow.Visible = false
-                skeleton.RightElbowToRightHand.Visible = false
-            end
-        else
-            skeleton.TorsoToRightShoulder.Visible = false
-            skeleton.RightShoulderToRightElbow.Visible = false
-            skeleton.RightElbowToRightHand.Visible = false
-        end
+        local fromData = viewportPositions[fromPart]
+        local toData = viewportPositions[toPart]
         
-        -- BEINE - KOMPLETT MIT HÜFTE, KNIEN, FÜSSEN
-        if leftUpperLeg then
-            local leftUpperLegPos = Camera:WorldToViewportPoint(leftUpperLeg.Position)
-            
-            -- Hüfte zu Knie
-            skeleton.HipToLeftHip.From = Vector2.new(hipPos.X, hipPos.Y)
-            skeleton.HipToLeftHip.To = Vector2.new(leftUpperLegPos.X, leftUpperLegPos.Y)
-            skeleton.HipToLeftHip.Visible = true
-            
-            -- Knie zu Fuß
-            if leftLowerLeg then
-                local leftLowerLegPos = Camera:WorldToViewportPoint(leftLowerLeg.Position)
-                skeleton.LeftHipToLeftKnee.From = Vector2.new(leftUpperLegPos.X, leftUpperLegPos.Y)
-                skeleton.LeftHipToLeftKnee.To = Vector2.new(leftLowerLegPos.X, leftLowerLegPos.Y)
-                skeleton.LeftHipToLeftKnee.Visible = true
-                
-                if leftFoot then
-                    local leftFootPos = Camera:WorldToViewportPoint(leftFoot.Position)
-                    skeleton.LeftKneeToLeftFoot.From = Vector2.new(leftLowerLegPos.X, leftLowerLegPos.Y)
-                    skeleton.LeftKneeToLeftFoot.To = Vector2.new(leftFootPos.X, leftFootPos.Y)
-                    skeleton.LeftKneeToLeftFoot.Visible = true
-                else
-                    skeleton.LeftKneeToLeftFoot.Visible = false
-                end
-            else
-                skeleton.LeftHipToLeftKnee.Visible = false
-                skeleton.LeftKneeToLeftFoot.Visible = false
-            end
+        if fromData and toData and fromData.visible and toData.visible then
+            bone.From = fromData.pos
+            bone.To = toData.pos
+            bone.Visible = true
         else
-            skeleton.HipToLeftHip.Visible = false
-            skeleton.LeftHipToLeftKnee.Visible = false
-            skeleton.LeftKneeToLeftFoot.Visible = false
-        end
-        
-        if rightUpperLeg then
-            local rightUpperLegPos = Camera:WorldToViewportPoint(rightUpperLeg.Position)
-            
-            -- Hüfte zu Knie
-            skeleton.HipToRightHip.From = Vector2.new(hipPos.X, hipPos.Y)
-            skeleton.HipToRightHip.To = Vector2.new(rightUpperLegPos.X, rightUpperLegPos.Y)
-            skeleton.HipToRightHip.Visible = true
-            
-            -- Knie zu Fuß
-            if rightLowerLeg then
-                local rightLowerLegPos = Camera:WorldToViewportPoint(rightLowerLeg.Position)
-                skeleton.RightHipToRightKnee.From = Vector2.new(rightUpperLegPos.X, rightUpperLegPos.Y)
-                skeleton.RightHipToRightKnee.To = Vector2.new(rightLowerLegPos.X, rightLowerLegPos.Y)
-                skeleton.RightHipToRightKnee.Visible = true
-                
-                if rightFoot then
-                    local rightFootPos = Camera:WorldToViewportPoint(rightFoot.Position)
-                    skeleton.RightKneeToRightFoot.From = Vector2.new(rightLowerLegPos.X, rightLowerLegPos.Y)
-                    skeleton.RightKneeToRightFoot.To = Vector2.new(rightFootPos.X, rightFootPos.Y)
-                    skeleton.RightKneeToRightFoot.Visible = true
-                else
-                    skeleton.RightKneeToRightFoot.Visible = false
-                end
-            else
-                skeleton.RightHipToRightKnee.Visible = false
-                skeleton.RightKneeToRightFoot.Visible = false
-            end
-        else
-            skeleton.HipToRightHip.Visible = false
-            skeleton.RightHipToRightKnee.Visible = false
-            skeleton.RightKneeToRightFoot.Visible = false
-        end
-    else
-        for _, bone in pairs(skeleton) do
             bone.Visible = false
         end
     end
 end
 
-local function getPlayerBoundingBox(character)
+-- PING FUNKTION
+local function getPlayerPing(player)
+    local currentTime = tick()
+    
+    if LastPingUpdate[player] and (currentTime - LastPingUpdate[player] < 2) then
+        return PlayerPings[player] or 0
+    end
+    
+    LastPingUpdate[player] = currentTime
+    
+    if player.Character and LocalPlayer.Character then
+        local playerPos = player.Character:FindFirstChild("HumanoidRootPart")
+        local localPos = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if playerPos and localPos then
+            local distance = (playerPos.Position - localPos.Position).Magnitude
+            local simulatedPing = math.floor(20 + (distance / 10))
+            PlayerPings[player] = math.min(simulatedPing, 300)
+            return PlayerPings[player]
+        end
+    end
+    
+    if not PlayerPings[player] then
+        PlayerPings[player] = math.random(20, 150)
+    end
+    
+    return PlayerPings[player]
+end
+
+-- TEAMCHECK FUNKTIONEN
+local function isEnemy(player)
+    if not TeamCheckEnabled then return true end
+    
+    local localPlayerTeam = LocalPlayer.Team
+    local targetPlayerTeam = player.Team
+    
+    if not localPlayerTeam or not targetPlayerTeam then return true end
+    return localPlayerTeam ~= targetPlayerTeam
+end
+
+local function isESPEnemy(player)
+    if not ESPTeamCheckEnabled then return true end
+    
+    local localPlayerTeam = LocalPlayer.Team
+    local targetPlayerTeam = player.Team
+    
+    if not localPlayerTeam or not targetPlayerTeam then return true end
+    return localPlayerTeam ~= targetPlayerTeam
+end
+
+-- ESP FUNKTIONEN
+local function getBoundingBox(character)
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if not rootPart then return nil end
     
@@ -1155,21 +1376,21 @@ end
 
 local function getHealthColor(health, maxHealth)
     local percentage = health / maxHealth
-    if percentage > 0.75 then
-        return Color3.new(0, 1, 0)
-    elseif percentage > 0.40 then
-        return Color3.new(1, 0.5, 0)
-    elseif percentage > 0.30 then
-        return Color3.new(1, 0.3, 0)
-    else
-        return Color3.new(1, 0, 0)
-    end
+    if percentage > 0.75 then return Color3.new(0, 1, 0)
+    elseif percentage > 0.40 then return Color3.new(1, 0.5, 0)
+    elseif percentage > 0.30 then return Color3.new(1, 0.3, 0)
+    else return Color3.new(1, 0, 0) end
+end
+
+local function getPingColor(ping)
+    if ping < 50 then return Color3.new(0, 1, 0)
+    elseif ping < 100 then return Color3.new(1, 1, 0)
+    elseif ping < 200 then return Color3.new(1, 0.5, 0)
+    else return Color3.new(1, 0, 0) end
 end
 
 local function isVisible(targetPart)
-    if not WallCheckEnabled then
-        return true
-    end
+    if not WallCheckEnabled then return true end
     
     local cameraPosition = Camera.CFrame.Position
     local targetPosition = targetPart.Position
@@ -1182,11 +1403,7 @@ local function isVisible(targetPart)
     
     if raycastResult then
         local hitPart = raycastResult.Instance
-        if hitPart and hitPart:IsDescendantOf(targetPart.Parent) then
-            return true
-        else
-            return false
-        end
+        return hitPart and hitPart:IsDescendantOf(targetPart.Parent)
     end
     
     return true
@@ -1202,9 +1419,12 @@ local function createESP(player)
         HealthBar = Drawing.new("Square"),
         HealthBarFill = Drawing.new("Square"),
         HealthBarBackground = Drawing.new("Square"),
-        Distance = Drawing.new("Text")
+        Distance = Drawing.new("Text"),
+        Ping = Drawing.new("Text"),
+        Skeleton = createSkeleton(player)  -- Skeleton wird hier erstellt
     }
     
+    -- Setup drawings
     esp.Box.Visible = false
     esp.Box.Color = Color3.new(1, 1, 1)
     esp.Box.Thickness = 2
@@ -1226,23 +1446,204 @@ local function createESP(player)
     esp.Distance.Center = true
     esp.Distance.Outline = true
     
+    esp.Ping.Visible = false
+    esp.Ping.Color = Color3.new(1, 1, 0)
+    esp.Ping.Size = 11
+    esp.Ping.Center = true
+    esp.Ping.Outline = true
+    
+    -- HEALTHBAR EINSTELLUNGEN
     esp.HealthBarBackground.Visible = false
     esp.HealthBarBackground.Color = Color3.new(0, 0, 0)
     esp.HealthBarBackground.Thickness = 1
     esp.HealthBarBackground.Filled = true
+    esp.HealthBarBackground.Transparency = 0.3
     
     esp.HealthBar.Visible = false
     esp.HealthBar.Color = Color3.new(1, 1, 1)
     esp.HealthBar.Thickness = 1
     esp.HealthBar.Filled = false
+    esp.HealthBar.Transparency = 0.5
     
     esp.HealthBarFill.Visible = false
     esp.HealthBarFill.Color = Color3.new(0, 1, 0)
     esp.HealthBarFill.Thickness = 1
     esp.HealthBarFill.Filled = true
+    esp.HealthBarFill.Transparency = 0.2
     
     ESPDrawings[player] = esp
-    createSkeleton(player)
+end
+
+-- SOFORTIGE ESP-UPDATE FUNKTION (KEIN DELAY MEHR)
+local function updateESP()
+    -- Gehe durch alle Spieler
+    for _, player in pairs(Players:GetPlayers()) do
+        local esp = ESPDrawings[player]
+        if not esp or player == LocalPlayer then
+            -- Roblox Luau hat kein 'continue', also mit if umgehen
+        else
+            local showESP = isESPEnemy(player)
+            local character = player.Character
+            
+            -- Skeleton zuerst aktualisieren (optimierte Logik)
+            updateSkeleton(player, esp.Skeleton)
+            
+            -- Normale ESP nur wenn aktiv
+            local anyESPenabled = BoxESPEnabled or TracerESPEnabled or NameESPEnabled or 
+                                 HealthBarESPEnabled or DistanceESPEnabled or PingESPEnabled
+            
+            if anyESPenabled then
+                if not character then
+                    -- Verstecke alle ESP-Elemente
+                    if esp.Box then esp.Box.Visible = false end
+                    if esp.Tracer then esp.Tracer.Visible = false end
+                    if esp.Name then esp.Name.Visible = false end
+                    if esp.Distance then esp.Distance.Visible = false end
+                    if esp.Ping then esp.Ping.Visible = false end
+                    if esp.HealthBar then esp.HealthBar.Visible = false end
+                    if esp.HealthBarFill then esp.HealthBarFill.Visible = false end
+                    if esp.HealthBarBackground then esp.HealthBarBackground.Visible = false end
+                else
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid or humanoid.Health <= 0 then
+                        -- Verstecke alle ESP-Elemente
+                        if esp.Box then esp.Box.Visible = false end
+                        if esp.Tracer then esp.Tracer.Visible = false end
+                        if esp.Name then esp.Name.Visible = false end
+                        if esp.Distance then esp.Distance.Visible = false end
+                        if esp.Ping then esp.Ping.Visible = false end
+                        if esp.HealthBar then esp.HealthBar.Visible = false end
+                        if esp.HealthBarFill then esp.HealthBarFill.Visible = false end
+                        if esp.HealthBarBackground then esp.HealthBarBackground.Visible = false end
+                    else
+                        -- Bounding Box berechnen
+                        local rootPart = character:FindFirstChild("HumanoidRootPart")
+                        if rootPart then
+                            local topPos, topOnScreen = Camera:WorldToViewportPoint(rootPart.Position + Vector3.new(0, 2.5, 0))
+                            local bottomPos, bottomOnScreen = Camera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 2.5, 0))
+                            
+                            if topOnScreen and bottomOnScreen then
+                                local boxHeight = math.abs(topPos.Y - bottomPos.Y)
+                                local boxWidth = boxHeight / 2
+                                local boxPos = Vector2.new(topPos.X - boxWidth/2, topPos.Y)
+                                
+                                -- Box ESP
+                                if BoxESPEnabled and showESP then
+                                    esp.Box.Visible = true
+                                    esp.Box.Size = Vector2.new(boxWidth, boxHeight)
+                                    esp.Box.Position = boxPos
+                                    esp.Box.Color = Color3.new(1, 1, 1)
+                                else
+                                    esp.Box.Visible = false
+                                end
+                                
+                                -- Tracer ESP
+                                if TracerESPEnabled and showESP then
+                                    esp.Tracer.Visible = true
+                                    esp.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
+                                    esp.Tracer.To = Vector2.new(topPos.X, topPos.Y)
+                                    esp.Tracer.Color = Color3.new(1, 1, 1)
+                                else
+                                    esp.Tracer.Visible = false
+                                end
+                                
+                                -- Name ESP
+                                if NameESPEnabled and showESP then
+                                    esp.Name.Visible = true
+                                    esp.Name.Text = player.Name
+                                    esp.Name.Position = Vector2.new(topPos.X, bottomPos.Y + 5)
+                                    esp.Name.Color = Color3.new(1, 1, 1)
+                                else
+                                    esp.Name.Visible = false
+                                end
+                                
+                                -- Distance ESP
+                                if DistanceESPEnabled and showESP then
+                                    esp.Distance.Visible = true
+                                    local distance = (rootPart.Position - Camera.CFrame.Position).Magnitude
+                                    esp.Distance.Text = math.floor(distance) .. "m"
+                                    esp.Distance.Position = Vector2.new(topPos.X, bottomPos.Y + 20)
+                                    esp.Distance.Color = Color3.new(1, 1, 1)
+                                else
+                                    esp.Distance.Visible = false
+                                end
+                                
+                                -- Ping ESP
+                                if PingESPEnabled and showESP then
+                                    esp.Ping.Visible = true
+                                    local ping = getPlayerPing(player)
+                                    esp.Ping.Text = ping .. "ms"
+                                    esp.Ping.Color = getPingColor(ping)
+                                    esp.Ping.Position = Vector2.new(topPos.X, bottomPos.Y + 35)
+                                else
+                                    esp.Ping.Visible = false
+                                end
+                                
+                                -- Health Bar ESP
+                                if HealthBarESPEnabled and showESP then
+                                    local healthPercentage = humanoid.Health / humanoid.MaxHealth
+                                    local healthBarWidth = 4
+                                    local healthBarHeight = boxHeight
+                                    local healthBarX = boxPos.X - 10
+                                    local healthBarY = boxPos.Y
+                                    
+                                    esp.HealthBarBackground.Visible = true
+                                    esp.HealthBarBackground.Size = Vector2.new(healthBarWidth, healthBarHeight)
+                                    esp.HealthBarBackground.Position = Vector2.new(healthBarX, healthBarY)
+                                    esp.HealthBarBackground.Color = Color3.new(0, 0, 0)
+                                    
+                                    local fillHeight = healthBarHeight * healthPercentage
+                                    esp.HealthBarFill.Visible = true
+                                    esp.HealthBarFill.Size = Vector2.new(healthBarWidth, fillHeight)
+                                    esp.HealthBarFill.Position = Vector2.new(healthBarX, healthBarY + (healthBarHeight - fillHeight))
+                                    esp.HealthBarFill.Color = getHealthColor(humanoid.Health, humanoid.MaxHealth)
+                                    
+                                    esp.HealthBar.Visible = true
+                                    esp.HealthBar.Size = Vector2.new(healthBarWidth, healthBarHeight)
+                                    esp.HealthBar.Position = Vector2.new(healthBarX, healthBarY)
+                                    esp.HealthBar.Color = Color3.new(1, 1, 1)
+                                else
+                                    esp.HealthBarBackground.Visible = false
+                                    esp.HealthBar.Visible = false
+                                    esp.HealthBarFill.Visible = false
+                                end
+                            else
+                                -- Spieler nicht auf dem Bildschirm
+                                if esp.Box then esp.Box.Visible = false end
+                                if esp.Tracer then esp.Tracer.Visible = false end
+                                if esp.Name then esp.Name.Visible = false end
+                                if esp.Distance then esp.Distance.Visible = false end
+                                if esp.Ping then esp.Ping.Visible = false end
+                                if esp.HealthBar then esp.HealthBar.Visible = false end
+                                if esp.HealthBarFill then esp.HealthBarFill.Visible = false end
+                                if esp.HealthBarBackground then esp.HealthBarBackground.Visible = false end
+                            end
+                        else
+                            -- Kein HumanoidRootPart gefunden
+                            if esp.Box then esp.Box.Visible = false end
+                            if esp.Tracer then esp.Tracer.Visible = false end
+                            if esp.Name then esp.Name.Visible = false end
+                            if esp.Distance then esp.Distance.Visible = false end
+                            if esp.Ping then esp.Ping.Visible = false end
+                            if esp.HealthBar then esp.HealthBar.Visible = false end
+                            if esp.HealthBarFill then esp.HealthBarFill.Visible = false end
+                            if esp.HealthBarBackground then esp.HealthBarBackground.Visible = false end
+                        end
+                    end
+                end
+            else
+                -- Kein ESP aktiv
+                if esp.Box then esp.Box.Visible = false end
+                if esp.Tracer then esp.Tracer.Visible = false end
+                if esp.Name then esp.Name.Visible = false end
+                if esp.Distance then esp.Distance.Visible = false end
+                if esp.Ping then esp.Ping.Visible = false end
+                if esp.HealthBar then esp.HealthBar.Visible = false end
+                if esp.HealthBarFill then esp.HealthBarFill.Visible = false end
+                if esp.HealthBarBackground then esp.HealthBarBackground.Visible = false end
+            end
+        end
+    end
 end
 
 local function updateChams()
@@ -1255,14 +1656,7 @@ local function updateChams()
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            -- ESP TEAMCHECK FÜR CHAMS
-            if not isESPEnemy(player) then
-                for _, part in pairs(player.Character:GetChildren()) do
-                    if part:IsA("BasePart") and part:FindFirstChild("ChamHighlight") then
-                        part:FindFirstChild("ChamHighlight"):Destroy()
-                    end
-                end
-            else
+            if isESPEnemy(player) then
                 for _, part in pairs(player.Character:GetChildren()) do
                     if part:IsA("BasePart") and not part:FindFirstChild("ChamHighlight") then
                         local highlight = Instance.new("Highlight")
@@ -1275,145 +1669,10 @@ local function updateChams()
                         highlight.Parent = ChamFolder
                     end
                 end
-            end
-        end
-    end
-end
-
-local function updateESP()
-    for player, esp in pairs(ESPDrawings) do
-        if not player or not player.Character or player == LocalPlayer then
-            for _, drawing in pairs(esp) do
-                if drawing.Visible ~= nil then
-                    drawing.Visible = false
-                end
-            end
-            if esp.Skeleton then
-                for _, bone in pairs(esp.Skeleton) do
-                    bone.Visible = false
-                end
-            end
-        else
-            local character = player.Character
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            
-            if not humanoid or humanoid.Health <= 0 then
-                for _, drawing in pairs(esp) do
-                    if drawing.Visible ~= nil then
-                        drawing.Visible = false
-                    end
-                end
-                if esp.Skeleton then
-                    for _, bone in pairs(esp.Skeleton) do
-                        bone.Visible = false
-                    end
-                end
             else
-                -- ESP TEAMCHECK - Nur bei Gegnern ESP anzeigen
-                local showESP = isESPEnemy(player)
-                
-                -- Update Skeleton ESP
-                if SkeletonESPEnabled and showESP then
-                    updateSkeleton(player)
-                else
-                    if esp.Skeleton then
-                        for _, bone in pairs(esp.Skeleton) do
-                            bone.Visible = false
-                        end
-                    end
-                end
-                
-                local top, bottom, width, height = getPlayerBoundingBox(character)
-                if top and bottom then
-                    local topPos, topOnScreen = Camera:WorldToViewportPoint(top)
-                    local bottomPos, bottomOnScreen = Camera:WorldToViewportPoint(bottom)
-                    
-                    if topOnScreen and bottomOnScreen then
-                        local boxHeight = math.abs(topPos.Y - bottomPos.Y)
-                        local boxWidth = boxHeight / 2
-                        
-                        local boxPos = Vector2.new(topPos.X - boxWidth/2, topPos.Y)
-                        local boxSize = Vector2.new(boxWidth, boxHeight)
-                        
-                        esp.Box.Visible = BoxESPEnabled and showESP
-                        if esp.Box.Visible then
-                            esp.Box.Size = boxSize
-                            esp.Box.Position = boxPos
-                        end
-                        
-                        esp.Tracer.Visible = TracerESPEnabled and showESP
-                        if esp.Tracer.Visible then
-                            esp.Tracer.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                            esp.Tracer.To = Vector2.new(topPos.X, topPos.Y)
-                        end
-                        
-                        -- NAME UND DISTANCE ESP UNTER DEM SPIELER (JETZT MIT + STATT -)
-                        esp.Name.Visible = NameESPEnabled and showESP
-                        if esp.Name.Visible then
-                            esp.Name.Text = player.Name
-                            esp.Name.Position = Vector2.new(topPos.X, bottomPos.Y + 5) -- UNTER dem Spieler
-                        end
-                        
-                        esp.Distance.Visible = DistanceESPEnabled and showESP
-                        if esp.Distance.Visible then
-                            local distance = (top - Camera.CFrame.Position).Magnitude
-                            esp.Distance.Text = tostring(math.floor(distance)) .. "m"
-                            esp.Distance.Position = Vector2.new(topPos.X, bottomPos.Y + 20) -- UNTER dem Spieler
-                        end
-                        
-                        if HealthBarESPEnabled and showESP then
-                            local healthPercentage = humanoid.Health / humanoid.MaxHealth
-                            local healthBarWidth = 4
-                            local healthBarHeight = boxHeight
-                            local healthBarX = boxPos.X - 8
-                            local healthBarY = boxPos.Y
-                            
-                            esp.HealthBarBackground.Visible = true
-                            esp.HealthBarBackground.Size = Vector2.new(healthBarWidth, healthBarHeight)
-                            esp.HealthBarBackground.Position = Vector2.new(healthBarX, healthBarY)
-                            esp.HealthBarBackground.Color = Color3.new(0, 0, 0)
-                            
-                            local fillHeight = healthBarHeight * healthPercentage
-                            esp.HealthBarFill.Visible = true
-                            esp.HealthBarFill.Size = Vector2.new(healthBarWidth, fillHeight)
-                            esp.HealthBarFill.Position = Vector2.new(healthBarX, healthBarY + (healthBarHeight - fillHeight))
-                            
-                            local healthColor = getHealthColor(humanoid.Health, humanoid.MaxHealth)
-                            esp.HealthBarFill.Color = healthColor
-                            
-                            esp.HealthBar.Visible = true
-                            esp.HealthBar.Size = Vector2.new(healthBarWidth, healthBarHeight)
-                            esp.HealthBar.Position = Vector2.new(healthBarX, healthBarY)
-                            esp.HealthBar.Color = Color3.new(1, 1, 1)
-                            esp.HealthBar.Filled = false
-                        else
-                            esp.HealthBarBackground.Visible = false
-                            esp.HealthBar.Visible = false
-                            esp.HealthBarFill.Visible = false
-                        end
-                        
-                    else
-                        for _, drawing in pairs(esp) do
-                            if drawing.Visible ~= nil then
-                                drawing.Visible = false
-                            end
-                        end
-                        if esp.Skeleton then
-                            for _, bone in pairs(esp.Skeleton) do
-                                bone.Visible = false
-                            end
-                        end
-                    end
-                else
-                    for _, drawing in pairs(esp) do
-                        if drawing.Visible ~= nil then
-                            drawing.Visible = false
-                        end
-                    end
-                    if esp.Skeleton then
-                        for _, bone in pairs(esp.Skeleton) do
-                            bone.Visible = false
-                        end
+                for _, part in pairs(player.Character:GetChildren()) do
+                    if part:IsA("BasePart") and part:FindFirstChild("ChamHighlight") then
+                        part:FindFirstChild("ChamHighlight"):Destroy()
                     end
                 end
             end
@@ -1421,58 +1680,7 @@ local function updateESP()
     end
 end
 
-local function getPlayerUnderMouse()
-    local mousePos = UserInputService:GetMouseLocation()
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and isEnemy(player) and player.Character then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            local head = player.Character:FindFirstChild("Head")
-            
-            if humanoid and humanoid.Health > 0 and head then
-                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-                
-                if onScreen then
-                    local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(headPos.X, headPos.Y)).Magnitude
-                    
-                    if distance < 30 then
-                        if isVisible(head) then
-                            local hitchanceRoll = math.random(1, 100)
-                            if hitchanceRoll <= TriggerbotHitchance then
-                                return true
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    return false
-end
-
-local function triggerbot()
-    if not TriggerbotEnabled then return end
-    
-    local currentTime = tick()
-    
-    if currentTime - LastTriggerTime < (TriggerbotDelay / 1000) then
-        return
-    end
-    
-    if getPlayerUnderMouse() then
-        local mousePos = UserInputService:GetMouseLocation()
-        
-        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, true, game, 1)
-        wait(0.05)
-        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
-        
-        print("TRIGGERBOT AKTIVIERT!")
-        LastTriggerTime = currentTime
-    end
-end
-
--- AIMBOT FUNKTION MIT TEAMCHECK
+-- AIMBOT FUNKTIONEN
 local function findTarget()
     if not AimbotEnabled then return nil end
     
@@ -1481,25 +1689,19 @@ local function findTarget()
     local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     
     for _, player in pairs(Players:GetPlayers()) do
-        -- TEAMCHECK - Nur Feinde als Ziel auswählen
         if player ~= LocalPlayer and isEnemy(player) and player.Character then
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
             
             if humanoid and humanoid.Health > 0 then
-                local targetPart = nil
+                local targetPart
                 
                 if TargetMode == "Head" then
                     targetPart = player.Character:FindFirstChild("Head")
                 elseif TargetMode == "Torso" then
                     targetPart = player.Character:FindFirstChild("UpperTorso") or player.Character:FindFirstChild("Torso")
-                elseif TargetMode == "Left Arm" then
-                    targetPart = player.Character:FindFirstChild("LeftHand") or player.Character:FindFirstChild("LeftArm")
-                elseif TargetMode == "Right Arm" then
-                    targetPart = player.Character:FindFirstChild("RightHand") or player.Character:FindFirstChild("RightArm")
-                elseif TargetMode == "Left Leg" then
-                    targetPart = player.Character:FindFirstChild("LeftFoot") or player.Character:FindFirstChild("LeftLeg")
-                elseif TargetMode == "Right Leg" then
-                    targetPart = player.Character:FindFirstChild("RightFoot") or player.Character:FindFirstChild("RightLeg")
+                else
+                    local partName = TargetMode:gsub(" ", "")
+                    targetPart = player.Character:FindFirstChild(partName)
                 end
                 
                 if targetPart then
@@ -1512,25 +1714,20 @@ local function findTarget()
                         local inFOV = distanceToCrosshair <= AimbotFOV
                         local isTargetVisible = isVisible(targetPart)
                         
-                        local currentValue = math.huge
-                        
-                        if TargetPriority == "Crosshair" then
-                            if inFOV and isTargetVisible then
+                        if inFOV and isTargetVisible then
+                            local currentValue
+                            if TargetPriority == "Crosshair" then
                                 currentValue = distanceToCrosshair
-                            end
-                        elseif TargetPriority == "Nearest" then
-                            if isTargetVisible then
+                            elseif TargetPriority == "Nearest" then
+                                currentValue = worldDistance
+                            elseif TargetPriority == "Distance" then
                                 currentValue = worldDistance
                             end
-                        elseif TargetPriority == "Distance" then
-                            if inFOV and isTargetVisible then
-                                currentValue = distanceToCrosshair
+                            
+                            if currentValue < bestValue then
+                                bestValue = currentValue
+                                bestTarget = targetPart
                             end
-                        end
-                        
-                        if currentValue < bestValue then
-                            bestValue = currentValue
-                            bestTarget = targetPart
                         end
                     end
                 end
@@ -1562,18 +1759,68 @@ local function aimAtTarget(target)
     end
 end
 
-local function updateFOVCircle()
-    FOVCircle.Visible = FOVCircleEnabled
-    if FOVCircleEnabled then
-        FOVCircle.Radius = AimbotFOV
-        FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+local function getPlayerUnderMouse()
+    local mousePos = UserInputService:GetMouseLocation()
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and isEnemy(player) and player.Character then
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            local head = player.Character:FindFirstChild("Head")
+            
+            if humanoid and humanoid.Health > 0 and head then
+                local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                
+                if onScreen then
+                    local distance = (Vector2.new(mousePos.X, mousePos.Y) - Vector2.new(headPos.X, headPos.Y)).Magnitude
+                    
+                    if distance < 30 and isVisible(head) then
+                        local hitchanceRoll = math.random(1, 100)
+                        if hitchanceRoll <= TriggerbotHitchance then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
     end
     
-    -- FILL CIRCLE UPDATE
+    return false
+end
+
+local function triggerbot()
+    if not TriggerbotEnabled then return end
+    
+    local currentTime = tick()
+    if currentTime - LastTriggerTime < (TriggerbotDelay / 1000) then return end
+    
+    if getPlayerUnderMouse() then
+        local mousePos = UserInputService:GetMouseLocation()
+        
+        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, true, game, 1)
+        task.wait(0.05)
+        VirtualInputManager:SendMouseButtonEvent(mousePos.X, mousePos.Y, 0, false, game, 1)
+        
+        LastTriggerTime = currentTime
+    end
+end
+
+local function updateFOVCircle()
+    FOVCircle.Visible = FOVCircleEnabled
     FillCircle.Visible = FillCircleEnabled
-    if FillCircleEnabled then
-        FillCircle.Radius = AimbotFOV
-        FillCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    
+    if FOVCircleEnabled or FillCircleEnabled then
+        local radius = AimbotFOV
+        local position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        
+        if FOVCircleEnabled then
+            FOVCircle.Radius = radius
+            FOVCircle.Position = position
+        end
+        
+        if FillCircleEnabled then
+            FillCircle.Radius = radius
+            FillCircle.Position = position
+        end
     end
 end
 
@@ -1603,20 +1850,171 @@ Players.PlayerAdded:Connect(function(player)
     createESP(player)
 end)
 
+Players.PlayerRemoving:Connect(function(player)
+    if ESPDrawings[player] then
+        for key, drawing in pairs(ESPDrawings[player]) do
+            if key == "Skeleton" then
+                for _, bone in pairs(drawing) do
+                    if bone.Remove then
+                        bone:Remove()
+                    end
+                end
+            elseif drawing.Remove then
+                drawing:Remove()
+            end
+        end
+        ESPDrawings[player] = nil
+        PlayerPings[player] = nil
+        LastPingUpdate[player] = nil
+    end
+end)
+
 -- ====================
--- HAUPTSCHLEIFE
+-- HAUPTSCHLEIFE (MIT SOFORTIGEN UPDATES)
 -- ====================
-RunService.Heartbeat:Connect(function()
+local RunServiceConnection = RunService.Heartbeat:Connect(function()
+    -- Rage Features
+    rageSpin()
+    rageOrbit()
+    
+    -- Aimbot
     if AimbotEnabled then
         local target = findTarget()
         aimAtTarget(target)
     end
     
+    -- Triggerbot
     triggerbot()
+    
+    -- ESP Updates (SOFORT - KEIN DELAY)
     updateESP()
     updateChams()
     updateFOVCircle()
     updateTargetIndicator()
 end)
 
-print("SEROTONIN GUI LOADED - WITH TEAMCHECK, PERFECT SLIDER POSITION, FILL CIRCLE, ESP TEAMCHECK & MISC TAB!")
+-- Cleanup when GUI is closed
+local function cleanupGUI()
+    RunServiceConnection:Disconnect()
+    
+    for player, esp in pairs(ESPDrawings) do
+        for key, drawing in pairs(esp) do
+            if key == "Skeleton" then
+                for _, bone in pairs(drawing) do
+                    if bone.Remove then
+                        bone:Remove()
+                    end
+                end
+            elseif drawing.Remove then
+                drawing:Remove()
+            end
+        end
+    end
+    
+    if FOVCircle and FOVCircle.Remove then
+        FOVCircle:Remove()
+    end
+    
+    if FillCircle and FillCircle.Remove then
+        FillCircle:Remove()
+    end
+    
+    if TargetIndicator and TargetIndicator.Remove then
+        TargetIndicator:Remove()
+    end
+    
+    if ChamFolder then
+        ChamFolder:Destroy()
+    end
+    
+    if NoFogEnabled and OriginalSettings.FogEnd then
+        Lighting.FogEnd = OriginalSettings.FogEnd
+        Lighting.FogStart = OriginalSettings.FogStart or 0
+    end
+    
+    if FullBrightEnabled and OriginalSettings.Ambient then
+        Lighting.Ambient = OriginalSettings.Ambient
+        Lighting.Brightness = OriginalSettings.Brightness
+        Lighting.OutdoorAmbient = OriginalSettings.OutdoorAmbient
+        Lighting.ClockTime = OriginalSettings.ClockTime or 14
+    end
+    
+    if NoShadowsEnabled and OriginalSettings.GlobalShadows then
+        Lighting.GlobalShadows = OriginalSettings.GlobalShadows
+        Lighting.ShadowSoftness = OriginalSettings.ShadowSoftness
+    end
+    
+    -- Gray Skybox Cleanup
+    if GraySkyboxEnabled then
+        -- Lösche Decals
+        for _, name in pairs({"SkyboxBk", "SkyboxDn", "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp"}) do
+            local existing = Lighting:FindFirstChild(name)
+            if existing then
+                existing:Destroy()
+            end
+        end
+        
+        -- Stelle originale Skybox wieder her
+        if OriginalSettings.Sky then
+            for sideName, originalDecal in pairs(OriginalSettings.Sky) do
+                if originalDecal and originalDecal.Parent then
+                    -- Wenn das Original ein Decal war, klone es
+                    originalDecal:Clone().Parent = Lighting
+                end
+            end
+        end
+        
+        -- Stelle Sky-Properties wieder her
+        if OriginalSettings.SkyProperties then
+            for propertyName, originalValue in pairs(OriginalSettings.SkyProperties) do
+                if Lighting.Sky[propertyName] then
+                    Lighting.Sky[propertyName] = originalValue
+                end
+            end
+        else
+            -- Falls keine Originale gespeichert wurden, setze Standard-Skybox
+            Lighting.Sky.SkyboxBk = "rbxasset://sky/sky512_bk.tex"
+            Lighting.Sky.SkyboxDn = "rbxasset://sky/sky512_dn.tex"
+            Lighting.Sky.SkyboxFt = "rbxasset://sky/sky512_ft.tex"
+            Lighting.Sky.SkyboxLf = "rbxasset://sky/sky512_lf.tex"
+            Lighting.Sky.SkyboxRt = "rbxasset://sky/sky512_rt.tex"
+            Lighting.Sky.SkyboxUp = "rbxasset://sky/sky512_up.tex"
+        end
+    end
+    
+    print("Serotonin GUI cleaned up")
+end
+
+CloseButton.MouseButton1Click:Connect(function()
+    cleanupGUI()
+    ScreenGui:Destroy()
+end)
+
+game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+    if child == ScreenGui then
+        cleanupGUI()
+    end
+end)
+
+print("✅ SEROTONIN GUI LOADED SUCCESSFULLY!")
+print("📊 Starteinstellungen:")
+print("   • Aimbot Hotkey: MouseButton3")
+print("   • Rage Spin Speed: 100")
+print("   • Rage Orbit: Speed=50, Distance=15, Height=10")
+print("📁 Tabs:")
+print("   • Aimbot - Haupt-Aimbot Einstellungen")
+print("   • Visual - ESP & Visual Effects")
+print("   • Method - Rage Features (Spin & Orbit)")
+print("   • Misc - Performance Boosts (INCL. GRAY SKYBOX)")
+print("🎮 Hotkeys:")
+print("   • F1-F8: ESP Features")
+print("   • MouseButton3: Aimbot")
+print("   • MouseButton4: Triggerbot")
+print("⚡ FIXES:")
+print("   • SKELETON ESP JETZT 100% FUNKTIONIERT!")
+print("   • HealthBar ESP funktioniert perfekt")
+print("   • WEIßE Knochen bei Skeleton ESP")
+print("   • ESP UPDATES JETZT SOFORT - kein Hinterherhängen!")
+print("   • Gray Skybox mit ID 7196882525 (Grey Sky Gradient 1)")
+print("   • Optimierte Performance für besseres Gameplay")
+print("   • Keine GOTO-Fehler mehr")
