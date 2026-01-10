@@ -1,7 +1,9 @@
--- EXECUTOR SUPPORT INFO (ENGLISH VERSION) - FIXED RESPAWN BUG
+-- EXECUTOR SUPPORT INFO (ENGLISH VERSION) - FIXED FOR GAME UPDATE
 local UserInputService = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Support Info GUI (appears first in center)
 local supportGui = Instance.new("ScreenGui")
@@ -158,11 +160,11 @@ local function createMainGUI()
     
     -- Main GUI create
     local mainGui = Instance.new("ScreenGui")
-    mainGui.Name = "AutoArmorGUI"
+    mainGui.Name = "AutoBuyGUI"
     mainGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 350, 0, 220)
+    mainFrame.Size = UDim2.new(0, 450, 0, 450)
     mainFrame.Position = UDim2.new(0, 10, 0, 10)
     mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     mainFrame.BorderSizePixel = 0
@@ -184,7 +186,7 @@ local function createMainGUI()
     titleLabel.Size = UDim2.new(1, -40, 1, 0)
     titleLabel.Position = UDim2.new(0, 10, 0, 0)
     titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = "AUTO BUY - V & B"
+    titleLabel.Text = "AUTO BUY ALL ITEMS - FIXED"
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     titleLabel.TextSize = 14
     titleLabel.Font = Enum.Font.GothamBold
@@ -203,10 +205,10 @@ local function createMainGUI()
     
     -- Status
     local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -20, 0, 40)
+    statusLabel.Size = UDim2.new(1, -20, 0, 50)
     statusLabel.Position = UDim2.new(0, 10, 0, 35)
     statusLabel.BackgroundTransparency = 1
-    statusLabel.Text = "Status: Ready\nV - Armor | B - USP"
+    statusLabel.Text = "Status: Loading all items...\nPress F1-F6 to buy items"
     statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     statusLabel.TextSize = 12
     statusLabel.Font = Enum.Font.Gotham
@@ -214,10 +216,23 @@ local function createMainGUI()
     statusLabel.TextXAlignment = Enum.TextXAlignment.Left
     statusLabel.Parent = mainFrame
     
+    -- Hotkey Info
+    local hotkeyLabel = Instance.new("TextLabel")
+    hotkeyLabel.Size = UDim2.new(1, -20, 0, 60)
+    hotkeyLabel.Position = UDim2.new(0, 10, 0, 85)
+    hotkeyLabel.BackgroundTransparency = 1
+    hotkeyLabel.Text = "HOTKEYS:\nF1 - Medium Armor\nF2 - USP\nF3 - Tactical Shotgun\nF4 - Pizza\nF5 - Silencer\nF6 - Donut"
+    hotkeyLabel.TextColor3 = Color3.fromRGB(180, 220, 255)
+    hotkeyLabel.TextSize = 11
+    hotkeyLabel.Font = Enum.Font.Gotham
+    hotkeyLabel.TextWrapped = true
+    hotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+    hotkeyLabel.Parent = mainFrame
+    
     -- Buttons Container
     local buttonContainer = Instance.new("Frame")
-    buttonContainer.Size = UDim2.new(1, -20, 0, 80)
-    buttonContainer.Position = UDim2.new(0, 10, 0, 80)
+    buttonContainer.Size = UDim2.new(1, -20, 0, 180)
+    buttonContainer.Position = UDim2.new(0, 10, 0, 150)
     buttonContainer.BackgroundTransparency = 1
     buttonContainer.Parent = mainFrame
     
@@ -227,145 +242,225 @@ local function createMainGUI()
     buttonLayout.StartCorner = Enum.StartCorner.TopLeft
     buttonLayout.Parent = buttonContainer
     
-    -- High-Medium Armor Button
-    local highMediumButton = Instance.new("TextButton")
-    highMediumButton.BackgroundColor3 = Color3.fromRGB(65, 105, 225)
-    highMediumButton.Text = "[High-Medium Armor]\nV Key"
-    highMediumButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    highMediumButton.TextSize = 11
-    highMediumButton.Font = Enum.Font.GothamBold
-    highMediumButton.Parent = buttonContainer
+    -- Item Buttons
+    local itemButtons = {}
+    local itemList = {
+        {name = "[Medium Armor]", key = "F1", color = Color3.fromRGB(65, 105, 225)},
+        {name = "[USP]", key = "F2", color = Color3.fromRGB(50, 205, 50)},
+        {name = "[Tactical Shotgun]", key = "F3", color = Color3.fromRGB(220, 20, 60)},
+        {name = "[Pizza]", key = "F4", color = Color3.fromRGB(255, 165, 0)},
+        {name = "[Silencer]", key = "F5", color = Color3.fromRGB(138, 43, 226)},
+        {name = "[Donut]", key = "F6", color = Color3.fromRGB(255, 105, 180)}
+    }
     
-    -- USP Button
-    local uspButton = Instance.new("TextButton")
-    uspButton.BackgroundColor3 = Color3.fromRGB(50, 205, 50)
-    uspButton.Text = "[USP]\nB Key"
-    uspButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    uspButton.TextSize = 11
-    uspButton.Font = Enum.Font.GothamBold
-    uspButton.Parent = buttonContainer
+    for _, item in ipairs(itemList) do
+        local button = Instance.new("TextButton")
+        button.BackgroundColor3 = item.color
+        button.Text = item.name .. "\n" .. item.key
+        button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        button.TextSize = 11
+        button.Font = Enum.Font.GothamBold
+        button.Parent = buttonContainer
+        
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = button
+        
+        itemButtons[item.name] = button
+    end
     
-    -- Auto-Buy Delay Section
-    local delayContainer = Instance.new("Frame")
-    delayContainer.Size = UDim2.new(1, -20, 0, 50)
-    delayContainer.Position = UDim2.new(0, 10, 0, 165)
-    delayContainer.BackgroundTransparency = 1
-    delayContainer.Parent = mainFrame
+    -- Auto-Buy Section
+    local autoBuyContainer = Instance.new("Frame")
+    autoBuyContainer.Size = UDim2.new(1, -20, 0, 80)
+    autoBuyContainer.Position = UDim2.new(0, 10, 0, 335)
+    autoBuyContainer.BackgroundTransparency = 1
+    autoBuyContainer.Parent = mainFrame
+    
+    local autoBuyTitle = Instance.new("TextLabel")
+    autoBuyTitle.Size = UDim2.new(1, 0, 0, 20)
+    autoBuyTitle.Position = UDim2.new(0, 0, 0, 0)
+    autoBuyTitle.BackgroundTransparency = 1
+    autoBuyTitle.Text = "AUTO BUY SETTINGS"
+    autoBuyTitle.TextColor3 = Color3.fromRGB(255, 255, 100)
+    autoBuyTitle.TextSize = 13
+    autoBuyTitle.Font = Enum.Font.GothamBold
+    autoBuyTitle.Parent = autoBuyContainer
     
     local delayLabel = Instance.new("TextLabel")
-    delayLabel.Size = UDim2.new(0, 120, 0, 20)
-    delayLabel.Position = UDim2.new(0, 0, 0, 0)
+    delayLabel.Size = UDim2.new(0, 100, 0, 25)
+    delayLabel.Position = UDim2.new(0, 0, 0, 25)
     delayLabel.BackgroundTransparency = 1
-    delayLabel.Text = "Auto-Buy Delay:"
+    delayLabel.Text = "Delay (seconds):"
     delayLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     delayLabel.TextSize = 12
     delayLabel.Font = Enum.Font.Gotham
     delayLabel.TextXAlignment = Enum.TextXAlignment.Left
-    delayLabel.Parent = delayContainer
+    delayLabel.Parent = autoBuyContainer
     
     local delayBox = Instance.new("TextBox")
-    delayBox.Size = UDim2.new(0, 50, 0, 25)
-    delayBox.Position = UDim2.new(0, 125, 0, 0)
+    delayBox.Size = UDim2.new(0, 60, 0, 25)
+    delayBox.Position = UDim2.new(0, 105, 0, 25)
     delayBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     delayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     delayBox.Text = "5"
     delayBox.TextSize = 12
     delayBox.Font = Enum.Font.Gotham
     delayBox.PlaceholderText = "Seconds"
-    delayBox.Parent = delayContainer
+    delayBox.Parent = autoBuyContainer
     
-    local secondsLabel = Instance.new("TextLabel")
-    secondsLabel.Size = UDim2.new(0, 60, 0, 20)
-    secondsLabel.Position = UDim2.new(0, 180, 0, 0)
-    secondsLabel.BackgroundTransparency = 1
-    secondsLabel.Text = "Seconds"
-    secondsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    secondsLabel.TextSize = 12
-    secondsLabel.Font = Enum.Font.Gotham
-    secondsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    secondsLabel.Parent = delayContainer
+    local delayCorner = Instance.new("UICorner")
+    delayCorner.CornerRadius = UDim.new(0, 6)
+    delayCorner.Parent = delayBox
     
     local autoBuyButton = Instance.new("TextButton")
-    autoBuyButton.Size = UDim2.new(0, 120, 0, 25)
-    autoBuyButton.Position = UDim2.new(0, 0, 0, 25)
+    autoBuyButton.Size = UDim2.new(0, 150, 0, 35)
+    autoBuyButton.Position = UDim2.new(1, -150, 0, 25)
     autoBuyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-    autoBuyButton.Text = "AUTO BUY START"
+    autoBuyButton.Text = "AUTO BUY ARMOR"
     autoBuyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    autoBuyButton.TextSize = 11
+    autoBuyButton.TextSize = 12
     autoBuyButton.Font = Enum.Font.GothamBold
-    autoBuyButton.Parent = delayContainer
-
-    -- Warning Label for Auto Buy
-    local warningLabel = Instance.new("TextLabel")
-    warningLabel.Size = UDim2.new(0, 150, 0, 25)
-    warningLabel.Position = UDim2.new(0, 125, 0, 25)
-    warningLabel.BackgroundTransparency = 1
-    warningLabel.Text = "You maybe will have Issues"
-    warningLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
-    warningLabel.TextSize = 10
-    warningLabel.Font = Enum.Font.Gotham
-    warningLabel.TextXAlignment = Enum.TextXAlignment.Left
-    warningLabel.Parent = delayContainer
+    autoBuyButton.Parent = autoBuyContainer
     
-    -- Corners for all buttons and boxes
-    local function addCorners()
-        local items = {highMediumButton, uspButton, delayBox, autoBuyButton, closeButton}
-        
-        for _, item in pairs(items) do
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 6)
-            corner.Parent = item
-        end
-    end
+    local autoBuyCorner = Instance.new("UICorner")
+    autoBuyCorner.CornerRadius = UDim.new(0, 6)
+    autoBuyCorner.Parent = autoBuyButton
     
-    addCorners()
+    -- Debug Button
+    local debugButton = Instance.new("TextButton")
+    debugButton.Size = UDim2.new(0, 80, 0, 25)
+    debugButton.Position = UDim2.new(0, 170, 0, 25)
+    debugButton.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+    debugButton.Text = "RESCAN"
+    debugButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    debugButton.TextSize = 11
+    debugButton.Font = Enum.Font.GothamBold
+    debugButton.Parent = autoBuyContainer
     
-    -- Variables
+    local debugCorner = Instance.new("UICorner")
+    debugCorner.CornerRadius = UDim.new(0, 6)
+    debugCorner.Parent = debugButton
+    
+    -- VARIABLEN
     local isAutoBuying = false
     local autoBuyConnection = nil
+    local foundItems = {}
     
-    -- Functions
+    -- FUNKTIONEN
     local function findBuyPad(itemName)
-        local mapFolder = workspace:FindFirstChild("MAP")
-        if not mapFolder then return nil end
+        -- Gehe direkt zu workspace.MAP.Pads
+        if workspace:FindFirstChild("MAP") then
+            local map = workspace.MAP
+            if map:FindFirstChild("Pads") then
+                local padsFolder = map.Pads
+                
+                -- Suche das Model mit dem exakten Namen
+                for _, model in pairs(padsFolder:GetChildren()) do
+                    if model:IsA("Model") and model.Name == itemName then
+                        -- Suche den ClickDetector im Model
+                        for _, child in pairs(model:GetDescendants()) do
+                            if child:IsA("ClickDetector") then
+                                return {
+                                    Model = model,
+                                    ClickDetector = child,
+                                    Name = itemName
+                                }
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+    
+    local function scanAllItems()
+        foundItems = {}
+        statusLabel.Text = "Status: Scanning for items..."
         
-        local buyPadsFolder = mapFolder:FindFirstChild("BuyPads")
-        if not buyPadsFolder then return nil end
+        local allItems = {
+            "[Medium Armor]",
+            "[USP]",
+            "[Tactical Shotgun]",
+            "[Pizza]",
+            "[Silencer]",
+            "[Donut]"
+        }
         
-        return buyPadsFolder:FindFirstChild(itemName)
+        local foundCount = 0
+        local foundNames = {}
+        
+        for _, itemName in ipairs(allItems) do
+            local pad = findBuyPad(itemName)
+            if pad then
+                foundItems[itemName] = pad
+                foundCount = foundCount + 1
+                table.insert(foundNames, itemName)
+                
+                -- Update Button
+                if itemButtons[itemName] then
+                    itemButtons[itemName].BackgroundColor3 = itemList[table.find(allItems, itemName)].color
+                    itemButtons[itemName].Text = itemName .. "\n" .. itemList[table.find(allItems, itemName)].key .. " ✓"
+                end
+            else
+                if itemButtons[itemName] then
+                    itemButtons[itemName].BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+                    itemButtons[itemName].Text = itemName .. "\nNOT FOUND"
+                end
+            end
+        end
+        
+        -- Update Status
+        if foundCount == #allItems then
+            statusLabel.Text = "Status: ALL ITEMS FOUND!\nPress F1-F6 to buy"
+        elseif foundCount > 0 then
+            statusLabel.Text = "Status: Found " .. foundCount .. "/" .. #allItems .. " items\nFound: " .. table.concat(foundNames, ", ")
+        else
+            statusLabel.Text = "Status: NO ITEMS FOUND!\nMake sure you're in a game with MAP.Pads"
+        end
+        
+        print("=== SCAN RESULTS ===")
+        print("Total items found:", foundCount, "/", #allItems)
+        for itemName, pad in pairs(foundItems) do
+            print("✓", itemName)
+        end
+        
+        return foundItems
     end
     
     local function buyItem(itemName, button)
-        local buyPad = findBuyPad(itemName)
-        if not buyPad then
+        if not foundItems[itemName] then
             statusLabel.Text = "Status: " .. itemName .. " not found!"
+            if button then
+                button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                wait(0.5)
+                button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            end
             return false
         end
         
-        local clickDetector = buyPad:FindFirstChildOfClass("ClickDetector")
-        if not clickDetector then
-            statusLabel.Text = "Status: No ClickDetector at " .. itemName
-            return false
+        local pad = foundItems[itemName]
+        local originalColor = button and button.BackgroundColor3
+        
+        -- Ändere Button Farbe
+        if button then
+            button.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
         end
-        
-        -- Save original button color
-        local originalColor = button.BackgroundColor3
-        
-        -- Change button color during purchase
-        button.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
         statusLabel.Text = "Status: Buying " .. itemName .. "..."
         
-        -- Execute click
-        local success = pcall(function()
-            fireclickdetector(clickDetector)
+        -- Versuche zu kaufen
+        local success, errorMsg = pcall(function()
+            fireclickdetector(pad.ClickDetector)
             return true
         end)
         
         if success then
-            statusLabel.Text = "Status: " .. itemName .. " purchased!"
-            button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            statusLabel.Text = "Status: Purchased " .. itemName .. "!"
+            if button then
+                button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            end
             
-            -- Success sound
+            -- Erfolgssound
             pcall(function()
                 local sound = Instance.new("Sound")
                 sound.SoundId = "rbxassetid://4590662766"
@@ -375,22 +470,33 @@ local function createMainGUI()
             end)
         else
             statusLabel.Text = "Status: Purchase failed!"
-            button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            if button then
+                button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+            end
+            print("Purchase error:", errorMsg)
         end
         
-        -- Reset button color after 1 second
-        wait(1)
-        button.BackgroundColor3 = originalColor
+        -- Reset Button nach 1 Sekunde
+        if button then
+            wait(1)
+            button.BackgroundColor3 = originalColor
+        end
         
         if not isAutoBuying then
-            statusLabel.Text = "Status: Ready\nV - Armor | B - USP"
+            statusLabel.Text = "Status: Ready!\nPress F1-F6 to buy items"
         end
         
         return success
     end
     
+    -- Auto-Buy Funktionen
     local function startAutoBuy()
         if isAutoBuying then return end
+        
+        if not foundItems["[Medium Armor]"] then
+            statusLabel.Text = "Status: No Medium Armor found for Auto-Buy!"
+            return
+        end
         
         local delayText = delayBox.Text
         local delaySeconds = tonumber(delayText)
@@ -405,18 +511,25 @@ local function createMainGUI()
         
         isAutoBuying = true
         autoBuyButton.BackgroundColor3 = Color3.fromRGB(220, 20, 60)
-        autoBuyButton.Text = "AUTO BUY STOP"
-        statusLabel.Text = "Status: Auto-Buy active\nEvery " .. delaySeconds .. "s Armor purchase"
+        autoBuyButton.Text = "STOP AUTO BUY"
+        statusLabel.Text = "Status: Auto-Buying Armor!\nEvery " .. delaySeconds .. " seconds"
         
         -- Auto-Buy Loop
-        autoBuyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        autoBuyConnection = RunService.Heartbeat:Connect(function()
             if not isAutoBuying then
                 autoBuyConnection:Disconnect()
                 return
             end
             
-            buyItem("[High-Medium Armor]", highMediumButton)
-            wait(delaySeconds)
+            -- Kaufe Medium Armor
+            buyItem("[Medium Armor]", itemButtons["[Medium Armor]"])
+            
+            -- Warte die eingestellte Zeit
+            local waitTime = 0
+            while waitTime < delaySeconds and isAutoBuying do
+                wait(0.1)
+                waitTime = waitTime + 0.1
+            end
         end)
     end
     
@@ -430,23 +543,20 @@ local function createMainGUI()
         end
         
         autoBuyButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-        autoBuyButton.Text = "AUTO BUY START"
-        statusLabel.Text = "Status: Auto-Buy stopped\nV - Armor | B - USP"
+        autoBuyButton.Text = "AUTO BUY ARMOR"
+        statusLabel.Text = "Status: Auto-Buy stopped!\nPress F1-F6 to buy items"
     end
     
-    -- Button Events
-    highMediumButton.MouseButton1Click:Connect(function()
-        if not isAutoBuying then
-            buyItem("[High-Medium Armor]", highMediumButton)
-        end
-    end)
+    -- Button Events für alle Items
+    for itemName, button in pairs(itemButtons) do
+        button.MouseButton1Click:Connect(function()
+            if not isAutoBuying then
+                buyItem(itemName, button)
+            end
+        end)
+    end
     
-    uspButton.MouseButton1Click:Connect(function()
-        if not isAutoBuying then
-            buyItem("[USP]", uspButton)
-        end
-    end)
-    
+    -- Auto-Buy Button
     autoBuyButton.MouseButton1Click:Connect(function()
         if isAutoBuying then
             stopAutoBuy()
@@ -455,57 +565,69 @@ local function createMainGUI()
         end
     end)
     
+    -- Debug/Rescan Button
+    debugButton.MouseButton1Click:Connect(function()
+        scanAllItems()
+    end)
+    
     closeButton.MouseButton1Click:Connect(function()
         stopAutoBuy()
         mainGui:Destroy()
     end)
     
-    -- V & B Key Hotkeys
+    -- Hotkeys F1-F6
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
         
-        -- V Key - High-Medium Armor
-        if input.KeyCode == Enum.KeyCode.V then
+        -- F1 - Medium Armor
+        if input.KeyCode == Enum.KeyCode.F1 then
             if not isAutoBuying then
-                buyItem("[High-Medium Armor]", highMediumButton)
+                buyItem("[Medium Armor]", itemButtons["[Medium Armor]"])
             end
         
-        -- B Key - USP
-        elseif input.KeyCode == Enum.KeyCode.B then
+        -- F2 - USP
+        elseif input.KeyCode == Enum.KeyCode.F2 then
             if not isAutoBuying then
-                buyItem("[USP]", uspButton)
+                buyItem("[USP]", itemButtons["[USP]"])
+            end
+        
+        -- F3 - Tactical Shotgun
+        elseif input.KeyCode == Enum.KeyCode.F3 then
+            if not isAutoBuying then
+                buyItem("[Tactical Shotgun]", itemButtons["[Tactical Shotgun]"])
+            end
+        
+        -- F4 - Pizza
+        elseif input.KeyCode == Enum.KeyCode.F4 then
+            if not isAutoBuying then
+                buyItem("[Pizza]", itemButtons["[Pizza]"])
+            end
+        
+        -- F5 - Silencer
+        elseif input.KeyCode == Enum.KeyCode.F5 then
+            if not isAutoBuying then
+                buyItem("[Silencer]", itemButtons["[Silencer]"])
+            end
+        
+        -- F6 - Donut
+        elseif input.KeyCode == Enum.KeyCode.F6 then
+            if not isAutoBuying then
+                buyItem("[Donut]", itemButtons["[Donut]"])
             end
         end
     end)
     
-    -- Auto-Check which items are available
+    -- Initial Scan
     spawn(function()
-        wait(1)
+        wait(2) -- Warte bis Spiel geladen ist
+        scanAllItems()
         
-        -- Check High-Medium Armor
-        local armorPad = findBuyPad("[High-Medium Armor]")
-        if armorPad then
-            statusLabel.Text = "Status: Ready\nV - Armor ✓ | B - USP"
-        else
-            highMediumButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            highMediumButton.Text = "[High-Medium Armor]\nNOT FOUND"
-            statusLabel.Text = "Status: Armor not found!"
-        end
-        
-        -- Check USP
-        local uspPad = findBuyPad("[USP]")
-        if not uspPad then
-            uspButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-            uspButton.Text = "[USP]\nNOT FOUND"
-            if armorPad then
-                statusLabel.Text = "Status: USP not found!\nV - Armor ✓"
-            else
-                statusLabel.Text = "Status: Both items not found!"
+        -- Scan alle 15 Sekunden erneut (falls sich was ändert)
+        while true do
+            wait(100)
+            if not isAutoBuying then
+                scanAllItems()
             end
-        end
-        
-        if armorPad and uspPad then
-            statusLabel.Text = "Status: Ready\nV - Armor ✓ | B - USP ✓"
         end
     end)
     
@@ -539,11 +661,15 @@ local function createMainGUI()
         end
     end)
     
-    -- 🚀 FIX: Main GUI bleibt sichtbar beim Sterben/Respawnen
-    -- KEIN CharacterRemoving Event mehr der die GUI ausblendet!
-    
-    print("🎯 AUTO ARMOR & USP GUI LOADED!")
-    print("🔧 FIX: GUI stays visible when you die/respawn!")
+    print("🎯 AUTO BUY ALL ITEMS GUI LOADED!")
+    print("📋 Items supported:")
+    print("   • [Medium Armor] - F1")
+    print("   • [USP] - F2")
+    print("   • [Tactical Shotgun] - F3")
+    print("   • [Pizza] - F4")
+    print("   • [Silencer] - F5")
+    print("   • [Donut] - F6")
+    print("🎮 Auto-Buy: Buys Medium Armor automatically")
 end
 
 -- Continue Button Event
